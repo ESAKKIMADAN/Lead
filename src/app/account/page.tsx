@@ -239,4 +239,16 @@ export default function AccountPage() {
               </button>
               <button
                 onClick={() => setResetConfirm(false)}
+                className="flex-1 border border-border text-foreground py-3 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </motion.div>
+
+      </div>
+    </div>
+  );
+}
     

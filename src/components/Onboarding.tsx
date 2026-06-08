@@ -18,6 +18,7 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
     await db.profiles.add({
       id: profileId,
       name,
+      streak: 0,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       createdAt: new Date().toISOString(),
     });
