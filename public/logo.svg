@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Top Chevron -->
+  <polygon points="50,15 15,35 15,47 50,27 85,47 85,35" fill="white" />
+  
+  <!-- Middle Chevron -->
+  <polygon points="50,33 15,53 15,65 50,45 85,65 85,53" fill="white" />
+  
+  <!-- Bottom Chevron -->
+  <polygon points="50,51 15,71 15,83 50,63 85,83 85,71" fill="white" />
+</svg>
