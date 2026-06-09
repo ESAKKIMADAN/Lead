@@ -223,42 +223,8 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {/* CARD 3: ABOUT, FAQ & DEACTIVATE */}
-              <div className="bg-neutral-900/40 border border-neutral-900 rounded-2xl overflow-hidden divide-y divide-neutral-950/60">
-                {/* Item: About app */}
-                <div 
-                  onClick={() => setCurrentScreen('about')}
-                  className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-neutral-900/20 transition-all active:bg-neutral-900/50"
-                >
-                  <div className="flex items-center gap-3.5">
-                    <svg className="text-neutral-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
-                    <span className="text-xs font-medium text-neutral-300">About application</span>
-                  </div>
-                  <svg className="text-neutral-600" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </div>
-
-                {/* Item: Help/FAQ */}
-                <div 
-                  onClick={() => setCurrentScreen('faq')}
-                  className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-neutral-900/20 transition-all active:bg-neutral-900/50"
-                >
-                  <div className="flex items-center gap-3.5">
-                    <svg className="text-neutral-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                    <span className="text-xs font-medium text-neutral-300">Help / FAQ</span>
-                  </div>
-                  <svg className="text-neutral-600" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </div>
-
+              {/* CARD 3: DEACTIVATE */}
+              <div className="bg-neutral-900/40 border border-neutral-900 rounded-2xl overflow-hidden">
                 {/* Item: Deactivate (Reset) */}
                 <div 
                   onClick={() => setCurrentScreen('deactivate')}
