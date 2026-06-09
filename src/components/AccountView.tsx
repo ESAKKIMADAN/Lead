@@ -23,6 +23,18 @@ export default function AccountView() {
 
   const [resetConfirm, setResetConfirm] = useState(false);
 
+  const hasNotificationSupport = typeof window !== 'undefined' && 'Notification' in window;
+  const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>(
+    hasNotificationSupport ? Notification.permission : 'unsupported'
+  );
+
+  const requestNotificationPermission = async () => {
+    if (hasNotificationSupport) {
+      const result = await Notification.requestPermission();
+      setPermissionState(result);
+    }
+  };
+
   if (!profile) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen">
@@ -319,6 +331,38 @@ export default function AccountView() {
               </motion.div>
             )}
           </AnimatePresence>
+        </motion.div>
+
+        {/* Reminders & Notifications */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="bg-card border border-border rounded-2xl p-8 space-y-4"
+        >
+          <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Reminders & Notifications</h3>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <p className="text-sm text-foreground/90 font-medium">Push Notifications</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Receive daily accountability reminders on your mobile device.
+              </p>
+            </div>
+            {permissionState === 'granted' ? (
+              <span className="text-xs font-bold uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-full">
+                Enabled ✓
+              </span>
+            ) : permissionState === 'unsupported' ? (
+              <span className="text-xs text-muted-foreground">Not supported on this device</span>
+            ) : (
+              <button
+                onClick={requestNotificationPermission}
+                className="bg-primary text-primary-foreground px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:opacity-90 transition-opacity"
+              >
+                Enable Notifications
+              </button>
+            )}
+          </div>
         </motion.div>
 
         {/* Danger Zone */}

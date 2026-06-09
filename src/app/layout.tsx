@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "Lead by SolveCrew",
   description: "Lead by SolveCrew — Your AI-powered accountability engine. Live Every Ambition Daily.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/logo.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

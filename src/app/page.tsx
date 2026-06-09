@@ -90,22 +90,21 @@ export default function Home() {
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            <span className="text-[9px] font-black uppercase mt-1 tracking-wider">Logs</span>
-            {activeTab === 'calendar' && (
-              <motion.div layoutId="activeDot" className="absolute -bottom-1 w-1 h-1 bg-primary rounded-full" />
-            )}
           </button>
 
           {/* Main Logo Tab (Chat) */}
           <button
             onClick={() => setActiveTab('chat')}
-            className={`relative flex items-center justify-center w-12 h-12 rounded-full border transition-all ${
-              activeTab === 'chat' 
-                ? 'border-primary bg-white/10 scale-110 shadow-[0_0_15px_rgba(255,255,255,0.25)]' 
-                : 'border-border/60 bg-zinc-950 hover:border-foreground/40'
+            className={`relative flex items-center justify-center w-12 h-12 transition-all ${
+              activeTab === 'chat' ? 'scale-110' : 'hover:scale-105'
             }`}
           >
-            <img src="/logo.svg" alt="LEAD" className="w-6 h-6 object-contain" />
+            <img 
+              src="/logo.svg" 
+              alt="LEAD" 
+              className="w-6 h-6 object-contain transition-all" 
+              style={{ opacity: activeTab === 'chat' ? 1 : 0.4 }}
+            />
           </button>
 
           {/* Account Tab */}
@@ -119,10 +118,6 @@ export default function Home() {
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-            <span className="text-[9px] font-black uppercase mt-1 tracking-wider">Profile</span>
-            {activeTab === 'account' && (
-              <motion.div layoutId="activeDot" className="absolute -bottom-1 w-1 h-1 bg-primary rounded-full" />
-            )}
           </button>
         </div>
 

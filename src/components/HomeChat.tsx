@@ -285,7 +285,7 @@ export default function HomeChat() {
       </div>
 
       {/* ── INPUT BAR ── */}
-      <div className="flex-shrink-0 px-4 pt-3 pb-24">
+      <div className="flex-shrink-0 px-4 pt-3 pb-32">
         <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto">
           {/* Glow ring */}
           <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-white/10 via-white/20 to-white/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -321,9 +321,7 @@ export default function HomeChat() {
               </button>
             </div>
           </div>
-          <p className="text-center text-[10px] text-white/15 mt-2 uppercase tracking-widest">
-            Enter to send · Shift+Enter for new line
-          </p>
+
         </form>
       </div>
 

@@ -128,20 +128,38 @@ export default function Dashboard() {
 
       if ('Notification' in window && Notification.permission === 'granted') {
         try {
-          const n = new Notification(data.notification_title, {
-            body: data.notification_body,
-            requireInteraction: true,
-          });
+          let notificationSent = false;
+
+          if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.ready;
+            if (registration && 'showNotification' in registration) {
+              await registration.showNotification(data.notification_title, {
+                body: data.notification_body,
+                icon: '/logo.png',
+                badge: '/logo-white.png',
+                tag: 'lead-reminder',
+                requireInteraction: true,
+              });
+              notificationSent = true;
+            }
+          }
+
+          if (!notificationSent) {
+            const n = new Notification(data.notification_title, {
+              body: data.notification_body,
+              requireInteraction: true,
+            });
+
+            n.onclick = () => {
+              window.focus();
+              setActiveNotification(logEntry);
+              n.close();
+            };
+          }
 
           if ('vibrate' in navigator) {
             navigator.vibrate(timeOfDay === 'morning' ? [100, 50, 100] : [200, 100, 200, 100, 400]);
           }
-
-          n.onclick = () => {
-            window.focus();
-            setActiveNotification(logEntry);
-            n.close();
-          };
         } catch (err) {
           console.warn('Native notification failed, falling back to in-app modal', err);
           setActiveNotification(logEntry);
@@ -160,6 +178,18 @@ export default function Dashboard() {
   // Time-based greeting
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+
+  const hasNotificationSupport = typeof window !== 'undefined' && 'Notification' in window;
+  const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>(
+    hasNotificationSupport ? Notification.permission : 'unsupported'
+  );
+
+  const requestNotificationPermission = async () => {
+    if (hasNotificationSupport) {
+      const result = await Notification.requestPermission();
+      setPermissionState(result);
+    }
+  };
 
   return (
     <div className="min-h-screen p-6 md:p-12 flex flex-col max-w-5xl mx-auto space-y-12 pb-32">
@@ -189,6 +219,27 @@ export default function Dashboard() {
           </button>
         </div>
       </header>
+
+      {permissionState !== 'granted' && permissionState !== 'unsupported' && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-primary/10 border border-primary/20 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+        >
+          <div>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-primary">Enable Reminders</h4>
+            <p className="text-xs text-muted-foreground mt-1">
+              Mobile notifications are required to receive accountability check-ins when the app is closed.
+            </p>
+          </div>
+          <button
+            onClick={requestNotificationPermission}
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-opacity"
+          >
+            Enable
+          </button>
+        </motion.div>
+      )}
 
       <main className="grid grid-cols-1 md:grid-cols-12 gap-8">
         
