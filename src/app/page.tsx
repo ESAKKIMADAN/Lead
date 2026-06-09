@@ -69,7 +69,7 @@ export default function Home() {
         )}
         {activeTab === 'account' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <AccountView />
+            <AccountView onBack={() => setActiveTab('chat')} />
           </motion.div>
         )}
       </div>
