@@ -185,9 +185,9 @@ export default function CalendarView() {
                 }
               } else {
                 if (isSelected) {
-                  cellClass = 'bg-white/15 border border-white text-white font-bold';
+                  cellClass = 'bg-white/15 text-white font-bold';
                 } else if (isCellToday) {
-                  cellClass = 'bg-neutral-900 border border-white/30 text-white font-bold';
+                  cellClass = 'bg-neutral-900 text-white font-bold';
                 } else {
                   cellClass = 'bg-neutral-950/40 border border-neutral-900/40 hover:bg-neutral-900/50 text-neutral-300';
                 }
