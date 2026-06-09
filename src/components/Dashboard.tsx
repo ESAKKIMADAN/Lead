@@ -21,6 +21,36 @@ export default function Dashboard() {
   const [showChat, setShowChat] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
+  const [nextReminderTime, setNextReminderTime] = useState('8:00 AM');
+
+  useEffect(() => {
+    const updateNextReminder = () => {
+      const now = new Date();
+      const times = [8, 12, 18]; // 8:00 AM, 12:00 PM, 6:00 PM
+      let targetTime = null;
+      
+      for (const hour of times) {
+        const target = new Date();
+        target.setHours(hour, 0, 0, 0);
+        if (target > now) {
+          targetTime = target;
+          break;
+        }
+      }
+      
+      if (!targetTime) {
+        targetTime = new Date();
+        targetTime.setDate(targetTime.getDate() + 1);
+        targetTime.setHours(8, 0, 0, 0);
+      }
+      
+      setNextReminderTime(targetTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }));
+    };
+    
+    updateNextReminder();
+    const interval = setInterval(updateNextReminder, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
@@ -40,15 +70,26 @@ export default function Dashboard() {
     }
   }, [profile]);
 
-  // Hourly system notification interval
+  // Scheduler for reminders at 8:00 AM, 12:00 PM, and 6:00 PM
   useEffect(() => {
     if (!profile || !ego) return;
 
     const interval = setInterval(() => {
-      const hours = new Date().getHours();
-      const timeOfDay = hours < 12 ? 'morning' : hours < 17 ? 'lunch' : 'evening';
-      simulateLead(timeOfDay);
-    }, 3600000); // 3600000ms = 1 hour
+      const now = new Date();
+      const minutes = now.getMinutes();
+      const hours = now.getHours();
+
+      // Trigger at the start of the hour
+      if (minutes === 0) {
+        if (hours === 8) {
+          simulateLead('morning');
+        } else if (hours === 12) {
+          simulateLead('lunch');
+        } else if (hours === 18) {
+          simulateLead('evening');
+        }
+      }
+    }, 60000); // Check every minute
 
     return () => clearInterval(interval);
   }, [profile, ego]);
@@ -253,7 +294,7 @@ export default function Dashboard() {
              </div>
              <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">Next Reminder</p>
-               <p className="text-4xl font-heading font-bold">8:00 PM</p>
+               <p className="text-4xl font-heading font-bold">{nextReminderTime}</p>
              </div>
           </div>
 

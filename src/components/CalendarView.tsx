@@ -184,7 +184,7 @@ export default function CalendarView() {
                 if (isSelected) {
                   cellClass = 'bg-primary/20 border-2 border-primary text-primary font-bold shadow-[0_0_10px_rgba(255,255,255,0.15)]';
                 } else if (isCellToday) {
-                  cellClass = 'bg-secondary/40 border border-border/80 text-foreground font-bold';
+                  cellClass = 'bg-secondary/40 border border-primary/45 text-primary font-bold';
                 } else {
                   cellClass = 'bg-secondary/20 hover:bg-secondary/40 text-foreground/80';
                 }
@@ -197,7 +197,6 @@ export default function CalendarView() {
                   className={`aspect-square flex flex-col items-center justify-center rounded-xl transition-all text-xs ${cellClass}`}
                 >
                   <span>{cell.day}</span>
-                  {isCellToday && <span className="w-1 h-1 bg-primary rounded-full mt-0.5" />}
                 </div>
               );
             })}
