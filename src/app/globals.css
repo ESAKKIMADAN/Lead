@@ -12,10 +12,12 @@
 
 @layer base {
   .theme {
-    --font-heading: var(--font-sans);
-    --font-sans: var(--font-sans);
+    --font-heading: 'Google Sans', sans-serif;
+    --font-sans: 'Google Sans', sans-serif;
   }
   :root {
+    --font-sans: 'Google Sans', sans-serif;
+    --font-heading: 'Google Sans', sans-serif;
     --background: oklch(0 0 0);
     --foreground: oklch(1 0 0);
     --card: oklch(0.08 0 0);
