@@ -154,11 +154,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     onClick={() => setCurrentScreen('profile')}
                     className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-neutral-900/20 transition-all active:bg-neutral-900/50"
                   >
-                    <div className="flex items-center gap-3.5">
-                      <svg className="text-neutral-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
+                    <div className="flex items-center">
                       <span className="text-xs font-medium text-neutral-300">Profile details</span>
                     </div>
                     <svg className="text-neutral-600" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -171,12 +167,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     onClick={() => setCurrentScreen('ego')}
                     className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-neutral-900/20 transition-all active:bg-neutral-900/50"
                   >
-                    <div className="flex items-center gap-3.5">
-                      <svg className="text-neutral-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <circle cx="12" cy="12" r="6" />
-                        <circle cx="12" cy="12" r="2" />
-                      </svg>
+                    <div className="flex items-center">
                       <span className="text-xs font-medium text-neutral-300">Ego setup & goals</span>
                     </div>
                     <svg className="text-neutral-600" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -189,11 +180,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     onClick={() => setCurrentScreen('notifications')}
                     className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-neutral-900/20 transition-all active:bg-neutral-900/50"
                   >
-                    <div className="flex items-center gap-3.5">
-                      <svg className="text-neutral-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                      </svg>
+                    <div className="flex items-center">
                       <span className="text-xs font-medium text-neutral-300">Notifications & Reminders</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -208,10 +195,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
                   {/* Item: Dark Mode Toggle */}
                   <div className="flex items-center justify-between px-5 py-4">
-                    <div className="flex items-center gap-3.5">
-                      <svg className="text-neutral-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                      </svg>
+                    <div className="flex items-center">
                       <span className="text-xs font-medium text-neutral-300">Dark mode</span>
                     </div>
                     <div className="w-10 h-6 bg-neutral-800 rounded-full p-0.5 cursor-pointer relative flex items-center justify-end">
