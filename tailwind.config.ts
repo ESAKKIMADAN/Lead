@@ -49,9 +49,9 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ['var(--font-plus-jakarta)', 'sans-serif'],
-        heading: ['Clash Display', 'sans-serif'],
-        serif: ['var(--font-instrument-serif)', 'serif'],
+        sans: ['"Google Sans"', 'sans-serif'],
+        heading: ['"Google Sans"', 'sans-serif'],
+        serif: ['"Google Sans"', 'serif'],
       },
     },
   },
