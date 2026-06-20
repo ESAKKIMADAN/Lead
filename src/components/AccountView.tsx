@@ -13,7 +13,8 @@ interface AccountViewProps {
 
 export default function AccountView({ onBack }: AccountViewProps) {
   const profile = useLiveQuery(() => db.profiles.toCollection().first());
-  const ego = useLiveQuery(() => db.egos.toCollection().first());
+  const egos = useLiveQuery(() => db.egos.toArray()) || [];
+  const ego = egos.find(e => e.active) || egos[0];
   
   // Navigation stack state
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('main');

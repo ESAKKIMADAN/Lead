@@ -13,7 +13,8 @@ import DailyCheckIn from './DailyCheckIn';
 export default function Dashboard() {
   const router = useRouter();
   const profile = useLiveQuery(() => db.profiles.toCollection().first());
-  const ego = useLiveQuery(() => db.egos.toCollection().first());
+  const egos = useLiveQuery(() => db.egos.toArray()) || [];
+  const ego = egos.find(e => e.active) || egos[0];
   const tasks = useLiveQuery(() => db.tasks.where('type').equals('short_term').toArray()) || [];
   
   const [activeNotification, setActiveNotification] = useState<NotificationLog | null>(null);
@@ -22,6 +23,9 @@ export default function Dashboard() {
   const [showAddTask, setShowAddTask] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [nextReminderTime, setNextReminderTime] = useState('8:00 AM');
+  const [showAddGoal, setShowAddGoal] = useState(false);
+  const [newGoalText, setNewGoalText] = useState('');
+  const [newReasonText, setNewReasonText] = useState('');
 
   useEffect(() => {
     const updateNextReminder = () => {
@@ -216,6 +220,28 @@ export default function Dashboard() {
     }
   };
 
+  const handleAddNewGoal = async () => {
+    if (!newGoalText.trim() || !newReasonText.trim()) return;
+    await db.transaction('rw', db.egos, async () => {
+      const allEgos = await db.egos.toArray();
+      for (const item of allEgos) {
+        await db.egos.update(item.id, { active: false });
+      }
+      await db.egos.add({
+        id: crypto.randomUUID(),
+        userId: profile.id,
+        goal: newGoalText.trim(),
+        reason: newReasonText.trim(),
+        category: 'mindset',
+        active: true,
+        createdAt: new Date().toISOString(),
+      });
+    });
+    setNewGoalText('');
+    setNewReasonText('');
+    setShowAddGoal(false);
+  };
+
   // Time-based greeting
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
@@ -234,14 +260,45 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen p-6 md:p-12 flex flex-col max-w-5xl mx-auto space-y-12 pb-32">
-      <header className="flex justify-between items-center border-b border-border pb-6 mt-6">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+      <header className="flex flex-col md:flex-row md:justify-between md:items-center border-b border-border pb-6 mt-6 gap-6">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 min-w-0">
           <h1 className="text-4xl md:text-5xl font-heading font-bold">{greeting}, {profile.name} 👋</h1>
-          <p className="text-muted-foreground text-sm mt-2 uppercase tracking-widest">
-            {ego.goal}
-          </p>
+          
+          {/* Goal Selector Chips */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 mt-4 max-w-full">
+            {egos.map(e => (
+              <button
+                key={e.id}
+                onClick={async () => {
+                  await db.transaction('rw', db.egos, async () => {
+                    const allEgos = await db.egos.toArray();
+                    for (const item of allEgos) {
+                      await db.egos.update(item.id, { active: item.id === e.id });
+                    }
+                  });
+                }}
+                className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                  e.active
+                    ? 'bg-white text-black shadow-md scale-105'
+                    : 'bg-secondary/80 border border-border text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                <span>🎯</span>
+                <span className="truncate max-w-[150px]">{e.goal}</span>
+              </button>
+            ))}
+
+            {/* Add Goal Chip */}
+            <button
+              onClick={() => setShowAddGoal(true)}
+              className="px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap bg-neutral-900 border border-dashed border-neutral-800 hover:border-neutral-700 text-neutral-400 hover:text-neutral-200 flex items-center gap-1"
+            >
+              <span>+</span>
+              <span>Add Goal</span>
+            </button>
+          </div>
         </motion.div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           {/* Account button */}
           <button
             id="dashboard-account-btn"
@@ -254,7 +311,7 @@ export default function Dashboard() {
           <button
             id="dashboard-lead-btn"
             onClick={() => setShowChat(true)}
-            className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold uppercase tracking-widest hover:opacity-90 transition-opacity"
+            className="bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold uppercase tracking-widest hover:opacity-90 transition-opacity animate-pulse-subtle"
           >
             Open LEAD
           </button>
@@ -395,6 +452,65 @@ export default function Dashboard() {
             setActiveNotification(null);
           }}
         />
+      )}
+
+      {showAddGoal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md bg-neutral-900/90 border border-neutral-800 rounded-3xl p-6 shadow-2xl space-y-4"
+          >
+            <div>
+              <h3 className="text-lg font-bold text-neutral-100 uppercase tracking-wider">Add New Goal</h3>
+              <p className="text-xs text-neutral-500 mt-1">Define another target and its ego trigger. We will hold you accountable to it.</p>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">Goal Description</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Learn React Native"
+                  value={newGoalText}
+                  onChange={(e) => setNewGoalText(e.target.value)}
+                  className="w-full bg-neutral-950/60 border border-neutral-800 text-sm text-neutral-100 rounded-xl px-4 py-3 outline-none focus:border-neutral-700 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">Why it matters (Ego Trigger)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. To launch my own indie apps"
+                  value={newReasonText}
+                  onChange={(e) => setNewReasonText(e.target.value)}
+                  className="w-full bg-neutral-950/60 border border-neutral-800 text-sm text-neutral-100 rounded-xl px-4 py-3 outline-none focus:border-neutral-700 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={handleAddNewGoal}
+                disabled={!newGoalText.trim() || !newReasonText.trim()}
+                className="flex-1 bg-white text-black py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-neutral-200 transition-all disabled:opacity-40"
+              >
+                Add Goal
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddGoal(false);
+                  setNewGoalText('');
+                  setNewReasonText('');
+                }}
+                className="flex-1 bg-neutral-800 text-neutral-300 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-neutral-700 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   );
