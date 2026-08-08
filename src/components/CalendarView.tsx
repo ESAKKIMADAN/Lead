@@ -11,16 +11,14 @@ const MONTHS = [
 ];
 
 export default function CalendarView() {
-  const { profile, ego, tasks, logs, toggleTask, deleteTask, addTask } = useSupabase();
-
-  // Load tasks and logs
-  const allShortTermTasks = tasks.filter(t => t.type === 'short_term');
+  const { profile, ego, tasks, logs, deleteTask, addTask } = useSupabase();
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-
-  // Selected date defaults to today
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // State for adding new event/meeting
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventTime, setNewEventTime] = useState('12:00');
 
   const year = currentDate.getFullYear();
   const monthIdx = currentDate.getMonth();
@@ -33,14 +31,16 @@ export default function CalendarView() {
     );
   }
 
-  // Filter tasks for the selected date
+  // Filter events (meetings/important days) for the selected date
   const selectedDateStr = selectedDate.toDateString();
-  const tasksForSelectedDate = allShortTermTasks.filter(task => {
-    const taskDate = task.target_date 
-      ? new Date(task.target_date).toDateString()
-      : new Date(task.created_at).toDateString();
-    return taskDate === selectedDateStr;
-  });
+  const eventsForSelectedDate = tasks
+    .filter(t => t.type === 'event')
+    .filter(event => {
+      return event.target_date 
+        ? new Date(event.target_date).toDateString() === selectedDateStr 
+        : false;
+    })
+    .sort((a, b) => (a.scheduled_time || '').localeCompare(b.scheduled_time || ''));
 
   // Get status for a specific date (yyyy-mm-dd)
   const getDayStatusString = (y: number, m: number, d: number) => {
@@ -80,38 +80,24 @@ export default function CalendarView() {
     setCurrentDate(new Date(year, monthIdx + 1, 1));
   };
 
-  const handleDeleteTask = async (id: string) => {
-    await deleteTask(id);
-  };
-
-  const handleAddTask = async (e: React.FormEvent) => {
+  const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    const title = newTaskTitle.trim();
+    const title = newEventTitle.trim();
     if (!title) return;
 
     await addTask(
       title,
-      'short_term',
-      undefined,
+      'event',
+      newEventTime || undefined,
       selectedDate.toISOString()
     );
-    setNewTaskTitle('');
+    setNewEventTitle('');
+    setNewEventTime('12:00');
   };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleAddTask(e);
-    }
-  };
-
-  const completedTasksCount = tasksForSelectedDate.filter(t => t.completed).length;
-  const progressPercent = tasksForSelectedDate.length > 0 ? Math.round((completedTasksCount / tasksForSelectedDate.length) * 100) : 0;
 
   // Date comparison threshold (start of today)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
-  const isSelectedDateToday = selectedDate.toDateString() === new Date().toDateString();
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-32">
@@ -183,18 +169,103 @@ export default function CalendarView() {
                 }
               }
 
+              // Count events for this cell date
+              const cellDateStr = cellDate.toDateString();
+              const hasEvents = tasks.some(t => 
+                t.type === 'event' && 
+                t.target_date && 
+                new Date(t.target_date).toDateString() === cellDateStr
+              );
+
               return (
                 <div
                   key={cell.key}
                   onClick={clickHandler}
-                  className={`aspect-square flex flex-col items-center justify-center rounded-xl transition-all text-xs cursor-pointer active:scale-95 ${cellClass}`}
+                  className={`aspect-square flex flex-col items-center justify-center rounded-xl transition-all text-xs cursor-pointer active:scale-95 relative ${cellClass}`}
                 >
-                  <span>{cell.day}</span>
+                  <span className={hasEvents ? '-mt-1' : ''}>{cell.day}</span>
+                  {hasEvents && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 absolute bottom-1.5" />
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
+
+        {/* Events & Meetings Card */}
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-5 shadow-sm">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">Schedule Planner</p>
+              <h3 className="text-sm font-semibold text-foreground/90 mt-0.5">
+                Meetings & Events • {selectedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              </h3>
+            </div>
+            <span className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold px-2.5 py-1 rounded-full">
+              {eventsForSelectedDate.length} Scheduled
+            </span>
+          </div>
+
+          {/* Events List */}
+          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+            {eventsForSelectedDate.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-6 text-center space-y-1">
+                <span className="text-2xl">📅</span>
+                <p className="text-muted-foreground text-xs leading-relaxed max-w-xs">
+                  No meetings or important days set.
+                </p>
+              </div>
+            ) : (
+              eventsForSelectedDate.map(event => (
+                <div key={event.id} className="flex items-center justify-between group bg-muted/20 border border-border/30 hover:border-border/60 py-2 px-3.5 rounded-xl transition-all">
+                  <div className="flex items-center gap-3">
+                    {event.scheduled_time && (
+                      <span className="text-[10px] font-bold bg-blue-500 text-white dark:bg-blue-900/50 dark:text-blue-300 px-2 py-0.5 rounded shadow-sm">
+                        {event.scheduled_time}
+                      </span>
+                    )}
+                    <span className="text-xs font-semibold text-foreground/90">{event.title}</span>
+                  </div>
+                  <button 
+                    onClick={() => deleteTask(event.id)}
+                    className="text-muted-foreground hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-all p-1 hover:scale-110 active:scale-95"
+                    title="Remove event"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Add Event Form */}
+          <form onSubmit={handleAddEvent} className="flex gap-2 pt-3 border-t border-border/60">
+            <input
+              type="text"
+              placeholder="Event or meeting title..."
+              value={newEventTitle}
+              onChange={(e) => setNewEventTitle(e.target.value)}
+              className="flex-1 bg-muted border border-border/60 text-foreground placeholder-muted-foreground/60 rounded-xl px-3.5 py-2.5 outline-none focus:border-border transition-colors text-xs"
+              required
+            />
+            <input
+              type="time"
+              value={newEventTime}
+              onChange={(e) => setNewEventTime(e.target.value)}
+              className="bg-muted border border-border/60 text-foreground rounded-xl px-2.5 py-2.5 outline-none focus:border-border transition-colors text-xs w-[90px]"
+              required
+            />
+            <button
+              type="submit"
+              disabled={!newEventTitle.trim()}
+              className="bg-blue-500 hover:bg-blue-650 disabled:opacity-40 text-white font-bold uppercase tracking-widest text-[9px] rounded-xl px-4 py-2.5 transition-all active:scale-95 shadow-sm"
+            >
+              Add
+            </button>
+          </form>
+        </div>
+
       </div>
     </div>
   );
