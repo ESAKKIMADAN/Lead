@@ -212,10 +212,34 @@ export default function HomeChat() {
           <span className="font-heading font-bold text-sm tracking-[0.1em] uppercase text-neutral-200">LEAD</span>
         </div>
         
-        <div className="flex items-center gap-2.5 bg-neutral-900/40 border border-neutral-850 px-3.5 py-1.5 rounded-full text-xs text-neutral-300 font-semibold shadow-inner">
-          <span className="text-[11px] font-medium text-neutral-400">Today:</span>
-          <span className="text-[11px] font-bold text-neutral-200">{completedCount}/{totalCount} Done</span>
-          <span className="text-[10px] bg-white text-black px-2 py-0.5 rounded-full font-black">{percentage}%</span>
+        <div className="relative flex items-center justify-center w-10 h-10 bg-neutral-900/40 border border-neutral-850 rounded-full shadow-inner">
+          <svg className="w-8 h-8 transform -rotate-90" viewBox="0 0 36 36">
+            {/* Circle Track */}
+            <circle
+              cx="18"
+              cy="18"
+              r="14"
+              className="stroke-neutral-850"
+              strokeWidth="3.5"
+              fill="transparent"
+            />
+            {/* Circle Progress */}
+            <motion.circle
+              cx="18"
+              cy="18"
+              r="14"
+              className="stroke-white"
+              strokeWidth="3.5"
+              fill="transparent"
+              strokeDasharray="88"
+              animate={{ strokeDashoffset: 88 - (percentage / 100) * 88 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              strokeLinecap="round"
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-neutral-100">
+            {percentage}%
+          </div>
         </div>
       </header>
 

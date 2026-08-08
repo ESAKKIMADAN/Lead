@@ -124,8 +124,7 @@ export default function TodoView() {
           {/* Tasks checklist */}
           <div className="space-y-3 pt-2 relative z-10 max-h-[350px] overflow-y-auto pr-1">
             {tasksForSelectedDate.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
-                <span className="text-3xl">☕</span>
+              <div className="flex flex-col items-center justify-center py-10 text-center">
                 <p className="text-neutral-500 text-xs max-w-xs leading-relaxed">
                   No tasks set for this day. Plan a system below to stay locked in.
                 </p>
