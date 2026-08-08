@@ -1,19 +1,19 @@
 'use client';
 
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/lib/db';
+import { useSupabase } from '@/lib/SupabaseContext';
 import Onboarding from '@/components/Onboarding';
 import HomeChat from '@/components/HomeChat';
 import CalendarView from '@/components/CalendarView';
 import AccountView from '@/components/AccountView';
+import Auth from '@/components/Auth';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
-  const profileCount = useLiveQuery(() => db.profiles.count());
+  const { user, profile, loading, refreshData } = useSupabase();
   const [activeTab, setActiveTab] = useState<'calendar' | 'chat' | 'account'>('chat');
 
-  if (profileCount === undefined) {
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-10">
         {/* Logo + spinning arc */}
@@ -48,9 +48,14 @@ export default function Home() {
     );
   }
 
+  // If the user is not authenticated, show authentication screen
+  if (!user) {
+    return <Auth />;
+  }
 
-  if (profileCount === 0) {
-    return <Onboarding onComplete={() => window.location.reload()} />;
+  // If user is authenticated but hasn't completed onboarding/created a profile
+  if (!profile) {
+    return <Onboarding onComplete={() => refreshData()} />;
   }
 
   return (

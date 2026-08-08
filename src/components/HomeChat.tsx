@@ -1,7 +1,6 @@
 'use client';
 
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/lib/db';
+import { useSupabase } from '@/lib/SupabaseContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -20,8 +19,7 @@ const QUICK_PROMPTS = [
 
 export default function HomeChat() {
   const router = useRouter();
-  const profile = useLiveQuery(() => db.profiles.toCollection().first());
-  const ego = useLiveQuery(() => db.egos.filter((e) => e.active === true).first());
+  const { profile, ego } = useSupabase();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');

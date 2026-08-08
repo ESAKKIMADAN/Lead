@@ -1,7 +1,6 @@
 'use client';
 
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/lib/db';
+import { useSupabase } from '@/lib/SupabaseContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,8 +9,7 @@ type ScreenState = 'main' | 'profile' | 'ego' | 'notifications' | 'about' | 'faq
 
 export default function AccountPage() {
   const router = useRouter();
-  const profile = useLiveQuery(() => db.profiles.toCollection().first());
-  const ego = useLiveQuery(() => db.egos.toCollection().first());
+  const { profile, ego, updateProfileName, updateEgo, resetAllData, signOut } = useSupabase();
   
   // Navigation stack state
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('main');
@@ -49,14 +47,14 @@ export default function AccountPage() {
   const handleSaveProfileName = async () => {
     if (!editName.trim()) return;
     setSaving(true);
-    await db.profiles.update(profile.id, { name: editName.trim() });
+    await updateProfileName(editName.trim());
     setSaving(false);
     setCurrentScreen('main');
   };
 
   const handleSaveEgo = async () => {
     setSaving(true);
-    await db.egos.update(ego.id, {
+    await updateEgo(ego.id, {
       goal: editGoal.trim() || ego.goal,
       reason: editReason.trim() || ego.reason,
     });
@@ -72,11 +70,10 @@ export default function AccountPage() {
   };
 
   const handleReset = async () => {
-    await db.profiles.clear();
-    await db.egos.clear();
-    await db.tasks.clear();
-    await db.notificationLog.clear();
-    window.location.href = '/';
+    setSaving(true);
+    await resetAllData();
+    setSaving(false);
+    router.push('/');
   };
 
   return (
@@ -223,8 +220,26 @@ export default function AccountPage() {
                 </div>
               </div>
 
-              {/* CARD 3: DEACTIVATE */}
-              <div className="bg-neutral-900/40 border border-neutral-900 rounded-2xl overflow-hidden">
+              {/* CARD 3: DEACTIVATE & SIGN OUT */}
+              <div className="bg-neutral-900/40 border border-neutral-900 rounded-2xl overflow-hidden divide-y divide-neutral-950/60">
+                {/* Item: Sign Out */}
+                <div 
+                  onClick={signOut}
+                  className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-neutral-900/20 transition-all active:bg-neutral-900/50"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <svg className="text-neutral-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                    <span className="text-xs font-medium text-neutral-300">Sign out</span>
+                  </div>
+                  <svg className="text-neutral-600" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </div>
+
                 {/* Item: Deactivate (Reset) */}
                 <div 
                   onClick={() => setCurrentScreen('deactivate')}

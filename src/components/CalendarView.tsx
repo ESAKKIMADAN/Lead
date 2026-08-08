@@ -1,7 +1,6 @@
 'use client';
 
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type Task } from '@/lib/db';
+import { useSupabase, type Task } from '@/lib/SupabaseContext';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 
@@ -12,12 +11,10 @@ const MONTHS = [
 ];
 
 export default function CalendarView() {
-  const profile = useLiveQuery(() => db.profiles.toCollection().first());
-  const ego = useLiveQuery(() => db.egos.toCollection().first());
-  
+  const { profile, ego, tasks, logs, toggleTask, deleteTask, addTask } = useSupabase();
+
   // Load tasks and logs
-  const allShortTermTasks = useLiveQuery(() => db.tasks.where('type').equals('short_term').toArray()) || [];
-  const logs = useLiveQuery(() => db.notificationLog.toArray()) || [];
+  const allShortTermTasks = tasks.filter(t => t.type === 'short_term');
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -39,9 +36,9 @@ export default function CalendarView() {
   // Filter tasks for the selected date
   const selectedDateStr = selectedDate.toDateString();
   const tasksForSelectedDate = allShortTermTasks.filter(task => {
-    const taskDate = task.targetDate 
-      ? new Date(task.targetDate).toDateString()
-      : new Date(task.createdAt).toDateString();
+    const taskDate = task.target_date 
+      ? new Date(task.target_date).toDateString()
+      : new Date(task.created_at).toDateString();
     return taskDate === selectedDateStr;
   });
 
@@ -51,8 +48,8 @@ export default function CalendarView() {
     const dateStr = dateToCheck.toDateString();
 
     const dayLogs = logs.filter(log => {
-      const logDate = log.deliveredAt ? new Date(log.deliveredAt) : new Date();
-      return logDate.toDateString() === dateStr && log.timeOfDay === 'evening';
+      const logDate = log.delivered_at ? new Date(log.delivered_at) : new Date();
+      return logDate.toDateString() === dateStr && log.time_of_day === 'evening';
     });
 
     if (dayLogs.length === 0) return 'none';
@@ -83,12 +80,8 @@ export default function CalendarView() {
     setCurrentDate(new Date(year, monthIdx + 1, 1));
   };
 
-  const toggleTask = async (task: Task) => {
-    await db.tasks.update(task.id, { completed: !task.completed });
-  };
-
   const handleDeleteTask = async (id: string) => {
-    await db.tasks.delete(id);
+    await deleteTask(id);
   };
 
   const handleAddTask = async (e: React.FormEvent) => {
@@ -96,15 +89,12 @@ export default function CalendarView() {
     const title = newTaskTitle.trim();
     if (!title) return;
 
-    await db.tasks.add({
-      id: crypto.randomUUID(),
-      userId: profile.id,
+    await addTask(
       title,
-      type: 'short_term',
-      completed: false,
-      targetDate: selectedDate.toISOString(),
-      createdAt: new Date().toISOString(),
-    });
+      'short_term',
+      undefined,
+      selectedDate.toISOString()
+    );
     setNewTaskTitle('');
   };
 

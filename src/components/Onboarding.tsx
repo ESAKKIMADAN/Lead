@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { db } from '@/lib/db';
+import { useSupabase } from '@/lib/SupabaseContext';
 
 export default function Onboarding({ onComplete }: { onComplete: () => void }) {
+  const { createInitialData } = useSupabase();
   const [name, setName] = useState('');
   const [goals, setGoals] = useState<{ goal: string; reason: string }[]>([
     { goal: '', reason: '' },
@@ -29,31 +30,10 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
     const isValid = goals.every((g) => g.goal.trim() && g.reason.trim());
     if (!isValid) return;
 
-    const profileId = crypto.randomUUID();
-
-    await db.profiles.add({
-      id: profileId,
-      name: name.trim(),
-      streak: 0,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      createdAt: new Date().toISOString(),
-    });
-
-    for (let i = 0; i < goals.length; i++) {
-      const g = goals[i];
-      await db.egos.add({
-        id: crypto.randomUUID(),
-        userId: profileId,
-        goal: g.goal.trim(),
-        reason: g.reason.trim(),
-        category: 'mindset',
-        active: i === 0,
-        createdAt: new Date().toISOString(),
-      });
-    }
-
+    await createInitialData(name, goals);
     onComplete();
   };
+
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
