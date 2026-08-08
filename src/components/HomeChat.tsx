@@ -19,7 +19,20 @@ const QUICK_PROMPTS = [
 
 export default function HomeChat() {
   const router = useRouter();
-  const { profile, ego } = useSupabase();
+  const { profile, ego, tasks } = useSupabase();
+
+  // Calculate today's tasks progress
+  const todayStr = new Date().toDateString();
+  const todayTasks = tasks ? tasks.filter(t => t.type === 'short_term').filter(task => {
+    const taskDate = task.target_date 
+      ? new Date(task.target_date).toDateString()
+      : new Date(task.created_at).toDateString();
+    return taskDate === todayStr;
+  }) : [];
+
+  const completedCount = todayTasks.filter(t => t.completed).length;
+  const totalCount = todayTasks.length;
+  const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -187,6 +200,24 @@ export default function HomeChat() {
 
   return (
     <div className="h-screen flex flex-col bg-[#0d0d0d] text-neutral-100 overflow-hidden">
+
+      {/* ── HEADER ── */}
+      <header className="px-6 py-4 flex items-center justify-between border-b border-neutral-900/60 bg-[#0d0d0d]/80 backdrop-blur-md sticky top-0 z-40">
+        <div className="flex items-center gap-2">
+          <svg width="20" height="20" viewBox="0 0 100 100" fill="currentColor" className="text-white">
+            <polygon points="50,15 15,35 15,47 50,27 85,47 85,35" />
+            <polygon points="50,33 15,53 15,65 50,45 85,65 85,53" />
+            <polygon points="50,51 15,71 15,83 50,63 85,83 85,71" />
+          </svg>
+          <span className="font-heading font-bold text-sm tracking-[0.1em] uppercase text-neutral-200">LEAD</span>
+        </div>
+        
+        <div className="flex items-center gap-2.5 bg-neutral-900/40 border border-neutral-850 px-3.5 py-1.5 rounded-full text-xs text-neutral-300 font-semibold shadow-inner">
+          <span className="text-[11px] font-medium text-neutral-400">Today:</span>
+          <span className="text-[11px] font-bold text-neutral-200">{completedCount}/{totalCount} Done</span>
+          <span className="text-[10px] bg-white text-black px-2 py-0.5 rounded-full font-black">{percentage}%</span>
+        </div>
+      </header>
 
       {/* ── MESSAGES ── */}
       <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
