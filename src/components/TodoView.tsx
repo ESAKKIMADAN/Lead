@@ -138,28 +138,25 @@ export default function TodoView() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-center justify-between group py-1.5 px-3 bg-neutral-950/20 hover:bg-neutral-950/60 border border-transparent hover:border-neutral-900/60 rounded-xl transition-all"
                 >
-                  <label className="flex items-center space-x-3 cursor-pointer flex-1">
+                  <div 
+                    onClick={() => toggleTask(task)} 
+                    className="flex items-center space-x-3 cursor-pointer flex-1 select-none"
+                  >
                     <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
                       task.completed ? 'bg-white border-white' : 'border-neutral-800 group-hover:border-neutral-700'
                     }`}>
-                    {task.completed && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
+                      {task.completed && (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
                     </div>
                     <span className={`text-xs transition-all font-medium ${
                       task.completed ? 'text-neutral-500 line-through' : 'text-neutral-200'
                     }`}>
                       {task.title}
                     </span>
-                    <input 
-                      type="checkbox" 
-                      className="hidden" 
-                      checked={task.completed} 
-                      onChange={() => toggleTask(task)} 
-                    />
-                  </label>
+                  </div>
                   
                   <button 
                     onClick={() => deleteTask(task.id)}
