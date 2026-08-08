@@ -8,80 +8,151 @@
   .text-balance {
     text-wrap: balance;
   }
+  /* Subtle fade-in for page mounts */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out both;
+  }
+  .animate-slide-up {
+    animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
 }
 
 @layer base {
-  .theme {
-    --font-heading: 'Google Sans', sans-serif;
-    --font-sans: 'Google Sans', sans-serif;
-  }
   :root {
-    --font-sans: 'Google Sans', sans-serif;
-    --font-heading: 'Google Sans', sans-serif;
-    
-    /* Premium Light Theme */
-    --background: oklch(0.975 0.005 280); /* Soft premium off-white */
-    --foreground: oklch(0.18 0.006 280);  /* Elegant charcoal text */
-    
-    --card: oklch(1 0 0);                 /* Crisp white cards */
-    --card-foreground: oklch(0.18 0.006 280);
-    
+    /* Google Inter / Outfit for premium feel */
+    --font-sans: 'Inter', 'Google Sans', system-ui, sans-serif;
+    --font-heading: 'Inter', 'Google Sans', system-ui, sans-serif;
+
+    /* ── Light Theme ── */
+    --background: oklch(0.97 0.004 270);     /* Airy off-white */
+    --foreground: oklch(0.15 0.008 265);     /* Rich near-black */
+
+    --card: oklch(1 0 0);                    /* Pure white cards */
+    --card-foreground: oklch(0.15 0.008 265);
+
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.18 0.006 280);
-    
-    --primary: oklch(0.18 0.006 280);     /* Dark primary elements */
+    --popover-foreground: oklch(0.15 0.008 265);
+
+    --primary: oklch(0.15 0.008 265);        /* Dark primary */
     --primary-foreground: oklch(1 0 0);
-    
-    --secondary: oklch(0.92 0.005 280);   /* Soft grey background tabs/menus */
-    --secondary-foreground: oklch(0.18 0.006 280);
-    
-    --muted: oklch(0.94 0.004 280);       /* Subtle inputs/progress bars */
-    --muted-foreground: oklch(0.48 0.008 280);
-    
-    --accent: oklch(0.92 0.005 280);
-    --accent-foreground: oklch(0.18 0.006 280);
-    
-    --destructive: oklch(0.6 0.2 27);
-    --border: oklch(0.18 0.006 280 / 12%); /* Delicate border */
-    --input: oklch(0.18 0.006 280 / 8%);
-    --ring: oklch(0.18 0.006 280);
+
+    --secondary: oklch(0.93 0.004 265);
+    --secondary-foreground: oklch(0.15 0.008 265);
+
+    --muted: oklch(0.94 0.003 265);
+    --muted-foreground: oklch(0.50 0.007 265);
+
+    --accent: oklch(0.93 0.004 265);
+    --accent-foreground: oklch(0.15 0.008 265);
+
+    --destructive: oklch(0.6 0.22 27);
+    --border: oklch(0.15 0.008 265 / 10%);
+    --input: oklch(0.15 0.008 265 / 7%);
+    --ring: oklch(0.15 0.008 265);
     --radius: 0.75rem;
   }
+
   .dark {
-    /* Premium Dark Theme */
-    --background: oklch(0.08 0.002 280);   /* Pitch dark background */
-    --foreground: oklch(0.98 0.002 280);   /* Soft white text */
-    
-    --card: oklch(0.12 0.003 280);         /* Lighter charcoal cards */
-    --card-foreground: oklch(0.98 0.002 280);
-    
-    --popover: oklch(0.12 0.003 280);
-    --popover-foreground: oklch(0.98 0.002 280);
-    
-    --primary: oklch(0.98 0.002 280);      /* Clean white primary */
-    --primary-foreground: oklch(0.08 0.002 280);
-    
-    --secondary: oklch(0.16 0.004 280);    /* Soft dark grey accents */
-    --secondary-foreground: oklch(0.98 0.002 280);
-    
-    --muted: oklch(0.15 0.004 280);
-    --muted-foreground: oklch(0.62 0.005 280);
-    
-    --accent: oklch(0.16 0.004 280);
-    --accent-foreground: oklch(0.98 0.002 280);
-    
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
+    /* ── Dark Theme ── */
+    --background: oklch(0.075 0.002 265);    /* Deep dark canvas */
+    --foreground: oklch(0.97 0.002 265);     /* Crisp white text */
+
+    --card: oklch(0.11 0.003 265);           /* Slightly raised surface */
+    --card-foreground: oklch(0.97 0.002 265);
+
+    --popover: oklch(0.13 0.003 265);
+    --popover-foreground: oklch(0.97 0.002 265);
+
+    --primary: oklch(0.97 0.002 265);
+    --primary-foreground: oklch(0.075 0.002 265);
+
+    --secondary: oklch(0.15 0.004 265);
+    --secondary-foreground: oklch(0.97 0.002 265);
+
+    --muted: oklch(0.14 0.004 265);
+    --muted-foreground: oklch(0.60 0.005 265);
+
+    --accent: oklch(0.15 0.004 265);
+    --accent-foreground: oklch(0.97 0.002 265);
+
+    --destructive: oklch(0.7 0.2 22);
+    --border: oklch(1 0 0 / 8%);
+    --input: oklch(1 0 0 / 12%);
+    --ring: oklch(0.55 0 0);
   }
+
   * {
     @apply border-border;
+    /* Smooth box-model transitions */
+    box-sizing: border-box;
   }
-  body {
-    @apply bg-background text-foreground transition-colors duration-300;
-  }
+
   html {
     @apply font-sans;
+    /* Enable smooth scroll */
+    scroll-behavior: smooth;
+    /* Prevent text resize on iOS rotate */
+    -webkit-text-size-adjust: 100%;
+    /* Better font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    transition: background-color 0.35s ease, color 0.25s ease;
+    /* Prevent body from having horizontal overflow */
+    overflow-x: hidden;
+    /* Better tap highlight on mobile */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── Custom scrollbar (webkit) ── */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.5 0 0 / 20%);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.5 0 0 / 35%);
+  }
+
+  /* ── Focus visible ring ── */
+  *:focus-visible {
+    outline: 2px solid oklch(0.5 0.15 270 / 60%);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Remove focus ring for mouse users */
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* ── Selection color ── */
+  ::selection {
+    background: oklch(0.65 0.22 280 / 25%);
+    color: inherit;
   }
 }
