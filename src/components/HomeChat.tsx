@@ -212,32 +212,32 @@ export default function HomeChat() {
           <span className="font-heading font-bold text-sm tracking-[0.1em] uppercase text-neutral-200">LEAD</span>
         </div>
         
-        <div className="relative flex items-center justify-center w-10 h-10 bg-neutral-900/40 border border-neutral-850 rounded-full shadow-inner">
-          <svg className="w-8 h-8 transform -rotate-90" viewBox="0 0 36 36">
+        <div className="relative flex items-center justify-center w-12 h-12 bg-neutral-950 border border-neutral-900 rounded-full shadow-[inset_0_1px_2px_rgba(255,255,255,0.03),0_4px_10px_rgba(0,0,0,0.5)]">
+          <svg className="w-9 h-9 transform -rotate-90" viewBox="0 0 36 36">
             {/* Circle Track */}
             <circle
               cx="18"
               cy="18"
-              r="14"
-              className="stroke-neutral-850"
-              strokeWidth="3.5"
+              r="15"
+              className="stroke-neutral-900"
+              strokeWidth="2.2"
               fill="transparent"
             />
             {/* Circle Progress */}
             <motion.circle
               cx="18"
               cy="18"
-              r="14"
+              r="15"
               className="stroke-white"
-              strokeWidth="3.5"
+              strokeWidth="2.2"
               fill="transparent"
-              strokeDasharray="88"
-              animate={{ strokeDashoffset: 88 - (percentage / 100) * 88 }}
+              strokeDasharray="94.2"
+              animate={{ strokeDashoffset: 94.2 - (percentage / 100) * 94.2 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
               strokeLinecap="round"
             />
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-neutral-100">
+          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-neutral-100 tracking-tighter">
             {percentage}%
           </div>
         </div>
