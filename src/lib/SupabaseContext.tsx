@@ -36,6 +36,17 @@ export interface Task {
   created_at: string;
 }
 
+export interface Note {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  color: string;
+  pinned: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface NotificationLog {
   id: string;
   user_id: string;
@@ -57,6 +68,7 @@ interface SupabaseContextType {
   ego: Ego | null;
   tasks: Task[];
   logs: NotificationLog[];
+  notes: Note[];
   loading: boolean;
   authError: string | null;
   signUp: (email: string, name: string, pin: string) => Promise<boolean>;
@@ -70,6 +82,9 @@ interface SupabaseContextType {
   deleteTask: (id: string) => Promise<void>;
   addNotificationLog: (log: Omit<NotificationLog, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
   updateNotificationLog: (id: string, response: 'yes' | 'no') => Promise<void>;
+  addNote: (title: string, content: string, color: string) => Promise<void>;
+  updateNote: (id: string, updates: Partial<Pick<Note, 'title' | 'content' | 'color' | 'pinned'>>) => Promise<void>;
+  deleteNote: (id: string) => Promise<void>;
   resetAllData: () => Promise<void>;
   refreshData: () => Promise<void>;
 }
@@ -88,6 +103,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [ego, setEgo] = useState<Ego | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [logs, setLogs] = useState<NotificationLog[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -109,6 +125,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         setEgo(null);
         setTasks([]);
         setLogs([]);
+        setNotes([]);
         setLoading(false);
       }
     });
@@ -169,11 +186,70 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
         if (logsErr) throw logsErr;
         setLogs(logsData || []);
+
+        // 5. Fetch Notes
+        const { data: notesData, error: notesErr } = await supabase
+          .from('notes')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('pinned', { ascending: false })
+          .order('updated_at', { ascending: false });
+
+        if (notesErr && notesErr.code !== 'PGRST116') throw notesErr;
+        setNotes(notesData || []);
       }
     } catch (err: any) {
       console.error('Error fetching data from Supabase:', err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const addNote = async (title: string, content: string, color: string) => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .insert({ user_id: user.id, title, content, color, pinned: false })
+        .select()
+        .single();
+      if (error) throw error;
+      setNotes(prev => [data, ...prev]);
+    } catch (err: any) {
+      console.error('Error adding note:', err.message);
+    }
+  };
+
+  const updateNote = async (id: string, updates: Partial<Pick<Note, 'title' | 'content' | 'color' | 'pinned'>>) => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      if (error) throw error;
+      setNotes(prev => prev.map(n => n.id === id ? data : n)
+        .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)));
+    } catch (err: any) {
+      console.error('Error updating note:', err.message);
+    }
+  };
+
+  const deleteNote = async (id: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setNotes(prev => prev.filter(n => n.id !== id));
+    } catch (err: any) {
+      console.error('Error deleting note:', err.message);
     }
   };
 
@@ -447,6 +523,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       setEgo(null);
       setTasks([]);
       setLogs([]);
+      setNotes([]);
     } catch (err: any) {
       console.error('Error resetting data:', err.message);
     }
@@ -461,6 +538,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         ego,
         tasks,
         logs,
+        notes,
         loading,
         authError,
         signUp,
@@ -474,6 +552,9 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         deleteTask,
         addNotificationLog,
         updateNotificationLog,
+        addNote,
+        updateNote,
+        deleteNote,
         resetAllData,
         refreshData: fetchUserData,
       }}

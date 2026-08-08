@@ -109,3 +109,30 @@ CREATE POLICY "Users can insert own notification logs" ON public.notification_lo
 
 CREATE POLICY "Users can update own notification logs" ON public.notification_logs
   FOR UPDATE USING (auth.uid() = user_id);
+
+-- 5. Notes Table
+CREATE TABLE IF NOT EXISTS public.notes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  title TEXT DEFAULT '',
+  content TEXT DEFAULT '',
+  color TEXT DEFAULT 'violet',
+  pinned BOOLEAN DEFAULT FALSE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- RLS for Notes
+ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own notes" ON public.notes
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own notes" ON public.notes
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own notes" ON public.notes
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own notes" ON public.notes
+  FOR DELETE USING (auth.uid() = user_id);
