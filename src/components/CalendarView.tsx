@@ -185,7 +185,7 @@ export default function CalendarView() {
                 >
                   <span className={hasEvents ? '-mt-1' : ''}>{cell.day}</span>
                   {hasEvents && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-blue-400 absolute bottom-1.5" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary absolute bottom-1.5" />
                   )}
                 </div>
               );
@@ -202,7 +202,7 @@ export default function CalendarView() {
                 Meetings & Events • {selectedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
               </h3>
             </div>
-            <span className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold px-2.5 py-1 rounded-full">
+            <span className="text-[10px] bg-foreground/10 text-foreground font-bold px-2.5 py-1 rounded-full">
               {eventsForSelectedDate.length} Scheduled
             </span>
           </div>
@@ -221,7 +221,7 @@ export default function CalendarView() {
                 <div key={event.id} className="flex items-center justify-between group bg-muted/20 border border-border/30 hover:border-border/60 py-2 px-3.5 rounded-xl transition-all">
                   <div className="flex items-center gap-3">
                     {event.scheduled_time && (
-                      <span className="text-[10px] font-bold bg-blue-500 text-white dark:bg-blue-900/50 dark:text-blue-300 px-2 py-0.5 rounded shadow-sm">
+                      <span className="text-[10px] font-bold bg-foreground text-background px-2 py-0.5 rounded shadow-sm">
                         {event.scheduled_time}
                       </span>
                     )}
@@ -259,7 +259,7 @@ export default function CalendarView() {
             <button
               type="submit"
               disabled={!newEventTitle.trim()}
-              className="bg-blue-500 hover:bg-blue-650 disabled:opacity-40 text-white font-bold uppercase tracking-widest text-[9px] rounded-xl px-4 py-2.5 transition-all active:scale-95 shadow-sm"
+              className="bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40 font-bold uppercase tracking-widest text-[9px] rounded-xl px-4 py-2.5 transition-all active:scale-95 shadow-sm"
             >
               Add
             </button>
