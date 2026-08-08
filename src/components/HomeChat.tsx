@@ -199,27 +199,27 @@ export default function HomeChat() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-[#0d0d0d] text-neutral-100 overflow-hidden">
+    <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
 
       {/* ── HEADER ── */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-neutral-900/60 bg-[#0d0d0d]/80 backdrop-blur-md sticky top-0 z-40">
+      <header className="px-6 py-4 flex items-center justify-between border-b border-border/60 bg-background/80 backdrop-blur-md sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <svg width="20" height="20" viewBox="0 0 100 100" fill="currentColor" className="text-white">
+          <svg width="20" height="20" viewBox="0 0 100 100" fill="currentColor" className="text-foreground">
             <polygon points="50,15 15,35 15,47 50,27 85,47 85,35" />
             <polygon points="50,33 15,53 15,65 50,45 85,65 85,53" />
             <polygon points="50,51 15,71 15,83 50,63 85,83 85,71" />
           </svg>
-          <span className="font-heading font-bold text-sm tracking-[0.1em] uppercase text-neutral-200">LEAD</span>
+          <span className="font-heading font-bold text-sm tracking-[0.1em] uppercase text-foreground/90">LEAD</span>
         </div>
         
-        <div className="relative flex items-center justify-center w-12 h-12 bg-neutral-950 border border-neutral-900 rounded-full shadow-[inset_0_1px_2px_rgba(255,255,255,0.03),0_4px_10px_rgba(0,0,0,0.5)]">
+        <div className="relative flex items-center justify-center w-12 h-12 bg-muted border border-border/60 rounded-full shadow-inner">
           <svg className="w-9 h-9 transform -rotate-90" viewBox="0 0 36 36">
             {/* Circle Track */}
             <circle
               cx="18"
               cy="18"
               r="15"
-              className="stroke-neutral-900"
+              className="stroke-background"
               strokeWidth="2.2"
               fill="transparent"
             />
@@ -228,7 +228,7 @@ export default function HomeChat() {
               cx="18"
               cy="18"
               r="15"
-              className="stroke-white"
+              className="stroke-primary"
               strokeWidth="2.2"
               fill="transparent"
               strokeDasharray="94.2"
@@ -237,7 +237,7 @@ export default function HomeChat() {
               strokeLinecap="round"
             />
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-neutral-100 tracking-tighter">
+          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-foreground tracking-tighter">
             {percentage}%
           </div>
         </div>
@@ -256,10 +256,10 @@ export default function HomeChat() {
               className="space-y-2"
             >
               <p className="text-5xl">🎯</p>
-              <h2 className="text-xl font-bold text-neutral-200 mt-4 animate-fade-in">
+              <h2 className="text-xl font-bold text-foreground/90 mt-4 animate-fade-in">
                 {greeting}, {profile.name}.
               </h2>
-              <p className="text-neutral-500 text-xs max-w-xs mx-auto leading-relaxed">
+              <p className="text-muted-foreground text-xs max-w-xs mx-auto leading-relaxed">
                 {ego.goal}
               </p>
             </motion.div>
@@ -275,7 +275,7 @@ export default function HomeChat() {
                 <button
                   key={prompt}
                   onClick={() => sendMessage(prompt)}
-                  className="text-left text-xs font-medium bg-neutral-900/40 border border-neutral-900 text-neutral-300 px-4 py-3 rounded-xl hover:bg-neutral-800 hover:border-neutral-700/80 hover:text-neutral-100 transition-all leading-snug active:scale-[0.98]"
+                  className="text-left text-xs font-medium bg-card border border-border text-foreground/80 px-4 py-3 rounded-xl hover:bg-muted hover:border-border hover:text-foreground transition-all leading-snug active:scale-[0.98] shadow-sm"
                 >
                   {prompt}
                 </button>
@@ -294,14 +294,14 @@ export default function HomeChat() {
               transition={{ duration: 0.25 }}
               className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
             >
-              <p className="text-[9px] font-bold uppercase tracking-widest mb-1 text-neutral-500 px-1">
+              <p className="text-[9px] font-bold uppercase tracking-widest mb-1 text-muted-foreground/85 px-1">
                 {m.role === 'user' ? profile.name : 'LEAD'}
               </p>
               <div
-                className={`px-4 py-3 rounded-2xl max-w-[82%] text-xs leading-relaxed whitespace-pre-wrap ${
+                className={`px-4 py-3 rounded-2xl max-w-[82%] text-xs leading-relaxed whitespace-pre-wrap shadow-sm ${
                   m.role === 'user'
-                    ? 'bg-white text-black rounded-tr-sm'
-                    : 'bg-neutral-900/40 border border-neutral-900 text-neutral-200 rounded-tl-sm'
+                    ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                    : 'bg-card border border-border text-foreground/90 rounded-tl-sm'
                 }`}
               >
                 {m.content}
@@ -317,15 +317,15 @@ export default function HomeChat() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-start"
           >
-            <p className="text-[9px] font-bold uppercase tracking-widest mb-1 text-neutral-500 px-1">
+            <p className="text-[9px] font-bold uppercase tracking-widest mb-1 text-muted-foreground/85 px-1">
               LEAD
             </p>
-            <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-neutral-900/40 border border-neutral-900 text-neutral-200 text-xs leading-relaxed max-w-[82%]">
+            <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-card border border-border text-foreground/90 text-xs leading-relaxed max-w-[82%] shadow-sm">
               {streamingText || (
                 <span className="flex gap-1 items-center py-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-neutral-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-neutral-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-neutral-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/80 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/80 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/80 animate-bounce" style={{ animationDelay: '300ms' }} />
                 </span>
               )}
             </div>
@@ -339,7 +339,7 @@ export default function HomeChat() {
       <div className="flex-shrink-0 px-5 pt-3 pb-32">
         <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto">
           
-          <div className="relative flex items-end gap-0 bg-neutral-950 border border-neutral-900 rounded-2xl overflow-hidden focus-within:border-neutral-800 transition-all duration-300">
+          <div className="relative flex items-end gap-0 bg-muted border border-border rounded-2xl overflow-hidden focus-within:border-border/90 transition-all duration-300 shadow-inner">
             <textarea
               ref={inputRef}
               id="home-chat-input"
@@ -349,7 +349,7 @@ export default function HomeChat() {
               onKeyDown={handleKeyDown}
               placeholder="Talk to LEAD..."
               disabled={isLoading}
-              className="flex-1 bg-transparent text-neutral-100 placeholder-neutral-700 px-5 py-4 outline-none resize-none text-sm leading-relaxed overflow-hidden"
+              className="flex-1 bg-transparent text-foreground placeholder-muted-foreground/50 px-5 py-4 outline-none resize-none text-sm leading-relaxed overflow-hidden"
               style={{ minHeight: '52px' }}
             />
             <div className="flex-shrink-0 p-2">
@@ -357,10 +357,10 @@ export default function HomeChat() {
                 id="home-chat-send-btn"
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center disabled:opacity-30 hover:bg-neutral-200 active:scale-95 transition-all duration-150"
+                className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30 hover:opacity-90 active:scale-95 transition-all duration-150 shadow-sm"
               >
                 {isLoading ? (
-                  <span className="w-4 h-4 border-2 border-neutral-300 border-t-black rounded-full animate-spin" />
+                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                 ) : (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="19" x2="12" y2="5" />

@@ -87,13 +87,13 @@ export default function Home() {
 
       {/* Floating Dynamic Island Menubar */}
       <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
-        <div className="pointer-events-auto flex items-center bg-[#0d0d0d]/95 backdrop-blur-xl border border-neutral-900 px-6 py-4 rounded-full shadow-[0_12px_40px_rgba(0,0,0,0.9)] gap-8 hover:scale-[1.01] transition-all duration-300">
+        <div className="pointer-events-auto flex items-center bg-card/90 backdrop-blur-xl border border-border px-6 py-4 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.7)] gap-8 hover:scale-[1.01] transition-all duration-300">
           
           {/* Calendar Tab */}
           <button
             onClick={() => setActiveTab('calendar')}
             className={`flex flex-col items-center justify-center transition-all relative active:scale-95 ${
-              activeTab === 'calendar' ? 'text-white scale-110' : 'text-neutral-500 hover:text-neutral-300'
+              activeTab === 'calendar' ? 'text-foreground scale-110' : 'text-muted-foreground hover:text-foreground'
             }`}
             title="Habit Tracker"
           >
@@ -109,7 +109,7 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('todo')}
             className={`flex flex-col items-center justify-center transition-all relative active:scale-95 ${
-              activeTab === 'todo' ? 'text-white scale-110' : 'text-neutral-500 hover:text-neutral-300'
+              activeTab === 'todo' ? 'text-foreground scale-110' : 'text-muted-foreground hover:text-foreground'
             }`}
             title="Daily Tasks"
           >
@@ -123,7 +123,7 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('chat')}
             className={`flex items-center justify-center transition-all active:scale-95 ${
-              activeTab === 'chat' ? 'text-white scale-110' : 'text-neutral-500 hover:text-neutral-300 hover:scale-105'
+              activeTab === 'chat' ? 'text-foreground scale-110' : 'text-muted-foreground hover:text-foreground hover:scale-105'
             }`}
             title="AI Accountability Coach"
           >
@@ -144,7 +144,7 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('account')}
             className={`flex flex-col items-center justify-center transition-all relative active:scale-95 ${
-              activeTab === 'account' ? 'text-white scale-110' : 'text-neutral-500 hover:text-neutral-300'
+              activeTab === 'account' ? 'text-foreground scale-110' : 'text-muted-foreground hover:text-foreground'
             }`}
             title="Settings"
           >

@@ -114,28 +114,28 @@ export default function CalendarView() {
   const isSelectedDateToday = selectedDate.toDateString() === new Date().toDateString();
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-neutral-100 pb-32">
+    <div className="min-h-screen bg-background text-foreground pb-32">
       <div className="max-w-xl mx-auto px-5 py-8 space-y-6">
         
         {/* Calendar Card */}
-        <div className="bg-neutral-900/40 border border-neutral-900 rounded-2xl p-6">
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
           {/* Calendar Month Selector */}
           <div className="flex justify-between items-center mb-6">
             <button 
               onClick={handlePrevMonth} 
-              className="w-8 h-8 rounded-lg bg-neutral-900 border border-neutral-800/40 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-100 flex items-center justify-center transition-all text-xs active:scale-95"
+              className="w-8 h-8 rounded-lg bg-secondary border border-border/40 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-all text-xs active:scale-95 shadow-sm"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="19" y1="12" x2="5" y2="12" />
                 <polyline points="12 19 5 12 12 5" />
               </svg>
             </button>
-            <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-300">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-foreground/90">
               {MONTHS[monthIdx]} {year}
             </h2>
             <button 
               onClick={handleNextMonth} 
-              className="w-8 h-8 rounded-lg bg-neutral-900 border border-neutral-800/40 hover:bg-neutral-800 text-neutral-400 hover:text-neutral-100 flex items-center justify-center transition-all text-xs active:scale-95"
+              className="w-8 h-8 rounded-lg bg-secondary border border-border/40 hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-all text-xs active:scale-95 shadow-sm"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12" />
@@ -147,7 +147,7 @@ export default function CalendarView() {
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-2 text-center text-[10px]">
             {WEEKDAYS.map((day) => (
-              <span key={day} className="font-bold text-neutral-500 uppercase tracking-wider">{day}</span>
+              <span key={day} className="font-bold text-muted-foreground/80 uppercase tracking-wider">{day}</span>
             ))}
             
             {cells.map((cell) => {
@@ -164,22 +164,22 @@ export default function CalendarView() {
               let clickHandler = () => setSelectedDate(cellDate);
 
               if (isPast) {
-                cellClass = 'opacity-20 cursor-not-allowed text-neutral-500';
+                cellClass = 'opacity-30 cursor-not-allowed text-muted-foreground/80';
                 clickHandler = () => {};
                 
                 const status = getDayStatusString(year, monthIdx, cell.day);
                 if (status === 'yes') {
-                  cellClass += ' bg-emerald-500/10 text-emerald-500/80 border border-emerald-500/20';
+                  cellClass += ' bg-emerald-500/10 text-emerald-650 dark:text-emerald-500 border border-emerald-500/25';
                 } else if (status === 'no') {
-                  cellClass += ' bg-red-500/10 text-red-500/80 border border-red-500/20';
+                  cellClass += ' bg-red-500/10 text-red-650 dark:text-red-500 border border-red-500/25';
                 }
               } else {
                 if (isSelected) {
-                  cellClass = 'bg-white/15 text-white font-bold';
+                  cellClass = 'bg-foreground/15 text-foreground font-bold border border-foreground/30';
                 } else if (isCellToday) {
-                  cellClass = 'bg-neutral-900 text-white font-bold';
+                  cellClass = 'bg-secondary text-foreground border border-border font-bold shadow-sm';
                 } else {
-                  cellClass = 'bg-neutral-950/40 border border-neutral-900/40 hover:bg-neutral-900/50 text-neutral-300';
+                  cellClass = 'bg-muted/40 border border-border/40 hover:bg-muted text-foreground/80';
                 }
               }
 
