@@ -90,11 +90,74 @@ export default function AccountView({ onBack }: AccountViewProps) {
     }
   };
 
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/\-/g, '+')
+      .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
   const requestNotificationPermission = async () => {
     if (hasNotificationSupport) {
       const result = await Notification.requestPermission();
       setPermissionState(result);
+
+      if (result === 'granted' && 'serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+          
+          if (!vapidPublicKey) {
+            console.error('VAPID public key not found');
+            return;
+          }
+
+          const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+          });
+
+          // Save subscription to Supabase
+          const subJSON = subscription.toJSON();
+          await supabase.from('push_subscriptions').insert({
+            user_id: profile?.id,
+            endpoint: subJSON.endpoint,
+            p256dh: subJSON.keys?.p256dh,
+            auth: subJSON.keys?.auth,
+          });
+          
+          console.log('Push subscription saved successfully.');
+        } catch (error) {
+          console.error('Error subscribing to push notifications:', error);
+        }
+      }
     }
+  };
+
+  const handleTestPush = async () => {
+    setSaving(true);
+    try {
+      await fetch('/api/push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: 'Test Notification',
+          body: 'This is a test web push notification from Lead App!',
+          user_id: profile?.id,
+        }),
+      });
+    } catch (err) {
+      console.error('Test push error:', err);
+    }
+    setSaving(false);
   };
 
   const handleReset = async () => {
@@ -426,8 +489,17 @@ export default function AccountView({ onBack }: AccountViewProps) {
                       Enable Push Alerts
                     </button>
                   ) : permissionState === 'granted' ? (
-                    <div className="flex items-center gap-2 text-black bg-card-mint px-5 py-3 rounded-full font-bold text-sm">
-                      <Check className="w-4 h-4 stroke-[3]" /> Active on this device
+                    <div className="flex flex-col items-center gap-4 w-full">
+                      <div className="flex items-center gap-2 text-black bg-card-mint px-5 py-3 rounded-full font-bold text-sm">
+                        <Check className="w-4 h-4 stroke-[3]" /> Active on this device
+                      </div>
+                      <button
+                        onClick={handleTestPush}
+                        disabled={saving}
+                        className="bg-white/10 text-white px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full hover:bg-white/20 transition-all disabled:opacity-50"
+                      >
+                        {saving ? 'Sending...' : 'Send Test Push'}
+                      </button>
                     </div>
                   ) : (
                     <p className="text-sm text-white/40">
