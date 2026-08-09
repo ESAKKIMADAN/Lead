@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { Zap, Target, ArrowRight } from 'lucide-react';
 import { type Profile, type Ego } from '@/lib/db';
 
 interface CheckInProps {
@@ -89,7 +90,7 @@ export default function DailyCheckIn({ profile, ego, onComplete }: CheckInProps)
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="text-center space-y-4"
           >
-            <div className="text-5xl animate-pulse">⚡</div>
+            <div className="text-primary animate-pulse flex justify-center"><Zap className="w-12 h-12" /></div>
             <p className="text-white/60 uppercase tracking-widest text-sm font-bold">LEAD is watching...</p>
           </motion.div>
         )}
@@ -190,7 +191,7 @@ export default function DailyCheckIn({ profile, ego, onComplete }: CheckInProps)
                   onClick={handleSubmit}
                   className="w-full bg-white text-black py-4 rounded-xl font-black uppercase tracking-widest text-sm hover:bg-white/90 transition-colors"
                 >
-                  Submit to LEAD →
+                  <div className="flex items-center justify-center gap-2"><span>Submit to LEAD</span><ArrowRight className="w-4 h-4"/></div>
                 </button>
               </motion.div>
             )}
@@ -204,7 +205,7 @@ export default function DailyCheckIn({ profile, ego, onComplete }: CheckInProps)
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="text-center space-y-4"
           >
-            <div className="text-5xl animate-bounce">🎯</div>
+            <div className="text-primary animate-bounce flex justify-center"><Target className="w-12 h-12" /></div>
             <p className="text-white/60 uppercase tracking-widest text-sm font-bold">LEAD is processing...</p>
           </motion.div>
         )}

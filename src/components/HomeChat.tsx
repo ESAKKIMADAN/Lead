@@ -3,7 +3,7 @@
 import { useSupabase } from '@/lib/SupabaseContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Target, Zap, ArrowUp, Sparkles, MessageCircle } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -18,10 +18,8 @@ const QUICK_PROMPTS = [
 ];
 
 export default function HomeChat() {
-  const router = useRouter();
   const { profile, ego, tasks } = useSupabase();
 
-  // Calculate today's tasks progress
   const todayStr = new Date().toDateString();
   const todayTasks = tasks ? tasks.filter(t => t.type === 'short_term').filter(task => {
     const taskDate = task.target_date 
@@ -41,15 +39,13 @@ export default function HomeChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  const [activeEgoId, setActiveEgoId] = useState<string | null>(null);
+  const [hasTriggeredGreeting, setHasTriggeredGreeting] = useState(false);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingText]);
 
-  // Auto-resize textarea
-  const [activeEgoId, setActiveEgoId] = useState<string | null>(null);
-  const [hasTriggeredGreeting, setHasTriggeredGreeting] = useState(false);
-
-  // Reset chat when the active ego changes
   useEffect(() => {
     if (ego && ego.id !== activeEgoId) {
       setActiveEgoId(ego.id);
@@ -112,7 +108,6 @@ export default function HomeChat() {
     }
   }, [profile, ego, messages.length, hasTriggeredGreeting, isLoading]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
@@ -124,7 +119,7 @@ export default function HomeChat() {
 
   const hour = new Date().getHours();
   const greeting =
-    hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
 
   const sendMessage = async (text: string) => {
     const trimmed = text.trim();
@@ -178,7 +173,7 @@ export default function HomeChat() {
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'LEAD is unavailable right now. Check your API key.' },
+        { role: 'assistant', content: 'LEAD AI is temporarily offline.' },
       ]);
       setStreamingText('');
     } finally {
@@ -199,109 +194,66 @@ export default function HomeChat() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
+    <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden select-none font-sans relative">
 
       {/* ── HEADER ── */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-border/60 bg-background/80 backdrop-blur-md sticky top-0 z-40">
-        <div className="flex items-center gap-2">
-          <svg width="20" height="20" viewBox="0 0 100 100" fill="currentColor" className="text-foreground">
-            <polygon points="50,15 15,35 15,47 50,27 85,47 85,35" />
-            <polygon points="50,33 15,53 15,65 50,45 85,65 85,53" />
-            <polygon points="50,51 15,71 15,83 50,63 85,83 85,71" />
-          </svg>
-          <span className="font-heading font-bold text-sm tracking-[0.1em] uppercase text-foreground/90">LEAD</span>
-        </div>
-        
-        <div className="relative flex items-center justify-center w-12 h-12 bg-muted border border-border/60 rounded-full shadow-inner">
-          <svg className="w-9 h-9 transform -rotate-90" viewBox="0 0 36 36">
-            {/* Circle Track */}
-            <circle
-              cx="18"
-              cy="18"
-              r="15"
-              className="stroke-background"
-              strokeWidth="2.2"
-              fill="transparent"
-            />
-            {/* Circle Progress */}
-            <motion.circle
-              cx="18"
-              cy="18"
-              r="15"
-              className="stroke-primary"
-              strokeWidth="2.2"
-              fill="transparent"
-              strokeDasharray="94.2"
-              animate={{ strokeDashoffset: 94.2 - (percentage / 100) * 94.2 }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-              strokeLinecap="round"
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-foreground tracking-tighter">
-            {percentage}%
-          </div>
+      <header className="px-6 py-8 flex items-center justify-between sticky top-0 z-40 bg-gradient-to-b from-black via-black/80 to-transparent">
+        <h1 className="text-4xl font-medium leading-[1.1] tracking-tight text-white">
+          Lead<br/>AI
+        </h1>
+        <div className="w-12 h-12 rounded-full bg-card-orange text-black flex items-center justify-center">
+          <Sparkles className="w-6 h-6" />
         </div>
       </header>
 
       {/* ── MESSAGES ── */}
-      <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
+      <div className="flex-1 overflow-y-auto px-6 space-y-6 pb-40">
 
-        {/* Empty state */}
         {messages.length === 0 && !isLoading && (
-          <div className="h-full flex flex-col items-center justify-center text-center px-6 space-y-6">
+          <div className="h-full flex flex-col items-center justify-center text-center space-y-8">
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="space-y-2"
+              className="space-y-4"
             >
-              <p className="text-5xl">🎯</p>
-              <h2 className="text-xl font-bold text-foreground/90 mt-4 animate-fade-in">
+              <div className="w-20 h-20 rounded-[32px] bg-card-orange text-black flex items-center justify-center mx-auto mb-4 border border-white/5">
+                <Target className="w-10 h-10" />
+              </div>
+              <h2 className="text-2xl font-medium text-white">
                 {greeting}, {profile.name}.
               </h2>
-              <p className="text-muted-foreground text-xs max-w-xs mx-auto leading-relaxed">
-                {ego.goal}
+              <p className="text-white/50 text-sm max-w-[250px] mx-auto leading-relaxed">
+                Goal: {ego.goal}
               </p>
             </motion.div>
 
-            {/* Quick prompts */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="grid grid-cols-2 gap-3 w-full max-w-sm"
-            >
+            <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
               {QUICK_PROMPTS.map((prompt) => (
                 <button
                   key={prompt}
                   onClick={() => sendMessage(prompt)}
-                  className="text-left text-xs font-medium bg-card border border-border text-foreground/80 px-4 py-3 rounded-xl hover:bg-muted hover:border-border hover:text-foreground transition-all leading-snug active:scale-[0.98] shadow-sm"
+                  className="text-left text-sm font-medium bg-white/5 border border-white/10 text-white/80 p-5 rounded-[24px] hover:bg-white/10 transition-colors leading-snug"
                 >
                   {prompt}
                 </button>
               ))}
-            </motion.div>
+            </div>
           </div>
         )}
 
-        {/* Message bubbles */}
         <AnimatePresence initial={false}>
           {messages.map((m, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
               className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
             >
-              <p className="text-[9px] font-bold uppercase tracking-widest mb-1 text-muted-foreground/85 px-1">
-                {m.role === 'user' ? profile.name : 'LEAD'}
-              </p>
               <div
-                className={`px-4 py-3 rounded-2xl max-w-[82%] text-xs leading-relaxed whitespace-pre-wrap shadow-sm ${
+                className={`px-6 py-4 rounded-[32px] max-w-[85%] text-[15px] font-medium leading-relaxed whitespace-pre-wrap ${
                   m.role === 'user'
-                    ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                    : 'bg-card border border-border text-foreground/90 rounded-tl-sm'
+                    ? 'bg-card-yellow text-black rounded-tr-lg'
+                    : 'bg-[#151515] border border-white/5 text-white rounded-tl-lg'
                 }`}
               >
                 {m.content}
@@ -310,24 +262,10 @@ export default function HomeChat() {
           ))}
         </AnimatePresence>
 
-        {/* Streaming bubble */}
         {isLoading && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-start"
-          >
-            <p className="text-[9px] font-bold uppercase tracking-widest mb-1 text-muted-foreground/85 px-1">
-              LEAD
-            </p>
-            <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-card border border-border text-foreground/90 text-xs leading-relaxed max-w-[82%] shadow-sm">
-              {streamingText || (
-                <span className="flex gap-1 items-center py-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/80 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/80 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/80 animate-bounce" style={{ animationDelay: '300ms' }} />
-                </span>
-              )}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-start">
+            <div className="px-6 py-4 rounded-[32px] rounded-tl-lg bg-[#151515] border border-white/5 text-white/70 text-[15px] leading-relaxed max-w-[85%]">
+              {streamingText || 'Generating...'}
             </div>
           </motion.div>
         )}
@@ -336,41 +274,31 @@ export default function HomeChat() {
       </div>
 
       {/* ── INPUT BAR ── */}
-      <div className="flex-shrink-0 px-5 pt-3 pb-32">
-        <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto">
-          
-          <div className="relative flex items-end gap-0 bg-muted border border-border rounded-2xl overflow-hidden focus-within:border-border/90 transition-all duration-300 shadow-inner">
+      <div className="absolute bottom-28 left-0 right-0 px-6 z-30">
+        <form onSubmit={handleSubmit} className="relative max-w-xl mx-auto">
+          <div className="flex items-center bg-[#1a1a1a]/90 backdrop-blur-2xl border border-white/10 rounded-[40px] p-2 shadow-2xl">
+            <div className="w-12 h-12 flex items-center justify-center flex-shrink-0 text-white/50">
+              <MessageCircle className="w-5 h-5" />
+            </div>
             <textarea
               ref={inputRef}
-              id="home-chat-input"
               rows={1}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Talk to LEAD..."
+              placeholder="Message Lead..."
               disabled={isLoading}
-              className="flex-1 bg-transparent text-foreground placeholder-muted-foreground/50 px-5 py-4 outline-none resize-none text-sm leading-relaxed overflow-hidden"
+              className="flex-1 bg-transparent text-white placeholder-white/30 px-2 py-3.5 outline-none resize-none text-[15px] font-medium overflow-hidden"
               style={{ minHeight: '52px' }}
             />
-            <div className="flex-shrink-0 p-2">
-              <button
-                id="home-chat-send-btn"
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30 hover:opacity-90 active:scale-95 transition-all duration-150 shadow-sm"
-              >
-                {isLoading ? (
-                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="19" x2="12" y2="5" />
-                    <polyline points="5 12 12 5 19 12" />
-                  </svg>
-                )}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="w-12 h-12 rounded-full bg-white text-black font-black flex items-center justify-center disabled:opacity-30 active:scale-95 transition-all shadow-sm flex-shrink-0"
+            >
+              <ArrowUp className="w-5 h-5 stroke-[3]" />
+            </button>
           </div>
-
         </form>
       </div>
 

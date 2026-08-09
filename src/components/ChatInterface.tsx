@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { type Ego, type Profile } from '@/lib/db';
 import { useEffect, useRef, useState } from 'react';
+import { X, Target } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -95,8 +96,8 @@ export default function ChatInterface({ profile, ego, onClose }: { profile: Prof
             <h2 className="text-2xl font-heading font-bold uppercase tracking-widest text-primary">LEAD Chat</h2>
             <p className="text-sm text-muted-foreground uppercase tracking-widest mt-1">Your Personal Accountability Engine</p>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-2 text-2xl transition-colors">
-            ✕
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-secondary border border-border flex items-center justify-center text-foreground font-black hover:bg-primary hover:text-primary-foreground transition-colors">
+            <X className="w-5 h-5"/>
           </button>
         </header>
 
@@ -104,7 +105,7 @@ export default function ChatInterface({ profile, ego, onClose }: { profile: Prof
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {messages.length === 0 && !isLoading && (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-40 py-20">
-              <p className="text-4xl">🎯</p>
+              <div className="flex justify-center mb-4"><Target className="w-12 h-12" /></div>
               <p className="text-xl font-heading uppercase tracking-widest">Awaiting Input</p>
               <p className="max-w-sm text-muted-foreground">Talk to LEAD about your goals, excuses, or what you conquered today.</p>
             </div>

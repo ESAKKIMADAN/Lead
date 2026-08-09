@@ -41,6 +41,11 @@ const config: Config = {
         card: {
           DEFAULT: "var(--card)",
           foreground: "var(--card-foreground)",
+          orange: "var(--card-orange)",
+          yellow: "var(--card-yellow)",
+          mint: "var(--card-mint)",
+          cream: "var(--card-cream)",
+          purple: "var(--card-purple)",
         },
       },
       borderRadius: {
@@ -49,9 +54,9 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ['"Google Sans"', 'sans-serif'],
-        heading: ['"Google Sans"', 'sans-serif'],
-        serif: ['"Google Sans"', 'serif'],
+        sans: ['"Outfit"', 'sans-serif'],
+        heading: ['"Outfit"', 'sans-serif'],
+        serif: ['"Outfit"', 'serif'],
       },
     },
   },

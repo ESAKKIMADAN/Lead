@@ -3,21 +3,20 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSupabase, type Note } from '@/lib/SupabaseContext';
+import { LayoutGrid, Heart, Circle, CheckCircle2, Mic, Plus, MoreHorizontal, FileText, Pin, Trash2, Pen } from 'lucide-react';
 
 const NOTE_COLORS = [
-  { id: 'violet',  gradient: 'from-violet-500 via-purple-500 to-indigo-600',   text: 'white' },
-  { id: 'cyan',    gradient: 'from-cyan-400 via-sky-400 to-blue-500',           text: 'white' },
-  { id: 'rose',    gradient: 'from-rose-400 via-pink-500 to-fuchsia-600',       text: 'white' },
-  { id: 'amber',   gradient: 'from-amber-400 via-orange-400 to-red-500',        text: 'white' },
-  { id: 'emerald', gradient: 'from-emerald-400 via-teal-500 to-cyan-600',       text: 'white' },
-  { id: 'slate',   gradient: 'from-slate-500 via-slate-600 to-slate-700',       text: 'white' },
+  { id: 'orange',   bg: 'bg-card-orange text-black',          icon: <LayoutGrid className="w-4 h-4 opacity-50"/> },
+  { id: 'yellow',   bg: 'bg-card-yellow text-black',          icon: <FileText className="w-4 h-4 opacity-50"/> },
+  { id: 'cream',    bg: 'bg-card-cream text-black',           icon: <MoreHorizontal className="w-4 h-4 opacity-50"/> },
+  { id: 'mint',     bg: 'bg-card-mint text-black',            icon: <Pin className="w-4 h-4 opacity-50"/> },
+  { id: 'purple',   bg: 'bg-card-purple text-black',          icon: <LayoutGrid className="w-4 h-4 opacity-50"/> },
 ];
 
 function getColor(id: string) {
   return NOTE_COLORS.find(c => c.id === id) ?? NOTE_COLORS[0];
 }
 
-// ── NOTE CARD ──────────────────────────────────────────────────────────────────
 function NoteCard({
   note, onEdit, onDelete, onPin,
 }: {
@@ -27,10 +26,9 @@ function NoteCard({
   onPin: (id: string, pinned: boolean) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const color = getColor(note.color);
+  const colorConfig = getColor(note.color);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
     const handler = (e: MouseEvent) => {
@@ -48,75 +46,74 @@ function NoteCard({
     <motion.div
       ref={ref}
       layout
-      initial={{ opacity: 0, scale: 0.94, y: 10 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-      className="relative rounded-[20px] overflow-hidden cursor-pointer group"
-      style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.10)' }}
+      transition={{ duration: 0.2 }}
+      className={`relative rounded-[32px] p-6 cursor-pointer ${colorConfig.bg} flex flex-col justify-between min-h-[180px] shadow-sm select-none`}
       onClick={() => onEdit(note)}
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${color.gradient}`} />
-      {/* Decorative shapes */}
-      <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none" />
-      <div className="absolute top-3 -left-3 w-12 h-12 bg-white/10 rounded-full blur-md pointer-events-none" />
-
-      <div className="relative z-10 p-4 min-h-[120px] flex flex-col">
-        <div className="flex justify-between items-start gap-1.5 mb-2">
-          <div className="flex-1 min-w-0">
-            {note.pinned && <span className="text-white/60 text-[10px] mb-0.5 block">📌 Pinned</span>}
-            {note.title ? (
-              <p className="text-white font-black text-sm leading-snug line-clamp-2">{note.title}</p>
-            ) : (
-              <p className="text-white/50 font-semibold text-sm italic leading-snug line-clamp-2">Untitled</p>
-            )}
+      <div>
+        <div className="flex justify-between items-start gap-1 mb-2">
+          <div className="flex-1 min-w-0 pr-2">
+            <h4 className="font-medium text-2xl leading-tight line-clamp-2">{note.title || 'Untitled'}</h4>
+            {note.pinned && <span className="text-xs font-semibold uppercase tracking-wider block mt-1 opacity-70 flex items-center gap-1"><Pin className="w-3 h-3"/> Pinned</span>}
           </div>
           <button
             onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
-            className="w-7 h-7 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
+            className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center flex-shrink-0 text-black/60 hover:text-black transition-colors"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="white">
-              <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
-            </svg>
+            <Heart className="w-4 h-4" />
           </button>
         </div>
 
         {note.content && (
-          <p className="text-white/75 text-xs leading-relaxed line-clamp-3 flex-1">{note.content}</p>
+          <div className="mt-4 space-y-2 opacity-80">
+            {note.content.split('\n').slice(0, 3).map((line, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                {line.startsWith('- [x]') || line.startsWith('x ') ? (
+                  <CheckCircle2 className="w-4 h-4 text-black/60 flex-shrink-0" />
+                ) : (
+                  <Circle className="w-4 h-4 text-black/40 flex-shrink-0" />
+                )}
+                <span className="truncate font-medium">{line.replace(/^-\s\[x\]\s|^-\s\[\s\]\s|^x\s/, '')}</span>
+              </div>
+            ))}
+          </div>
         )}
-
-        <p className="text-white/40 text-[10px] font-semibold mt-3">{timeStr}</p>
       </div>
 
-      {/* Context menu */}
+      <div className="mt-4 flex items-center justify-between opacity-60 text-xs font-medium">
+        <span>Update {timeStr}</span>
+      </div>
+
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: -4 }}
-            transition={{ duration: 0.14 }}
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
             onClick={e => e.stopPropagation()}
-            className="absolute top-9 right-3 z-20 w-36 bg-white dark:bg-neutral-800 rounded-2xl shadow-xl border border-border/60 overflow-hidden"
+            className="absolute top-12 right-4 z-20 w-36 bg-black rounded-2xl shadow-xl border border-white/10 overflow-hidden text-white"
           >
-            {[
-              { label: note.pinned ? 'Unpin' : 'Pin', emoji: '📌', action: () => { onPin(note.id, !note.pinned); setMenuOpen(false); } },
-              { label: 'Edit', emoji: '✏️', action: () => { onEdit(note); setMenuOpen(false); } },
-              { label: 'Delete', emoji: '🗑️', danger: true, action: () => { onDelete(note.id); setMenuOpen(false); } },
-            ].map(item => (
-              <button
-                key={item.label}
-                onClick={item.action}
-                className={`flex items-center gap-2.5 w-full px-3.5 py-2.5 text-xs font-semibold transition-all ${
-                  item.danger
-                    ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
-                    : 'text-foreground hover:bg-muted/60'
-                }`}
-              >
-                <span>{item.emoji}</span>
-                <span>{item.label}</span>
-              </button>
-            ))}
+            <button
+              onClick={() => { onPin(note.id, !note.pinned); setMenuOpen(false); }}
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium hover:bg-white/10"
+            >
+              <Pin className="w-4 h-4"/> {note.pinned ? 'Unpin' : 'Pin'}
+            </button>
+            <button
+              onClick={() => { onEdit(note); setMenuOpen(false); }}
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium hover:bg-white/10"
+            >
+              <Pen className="w-4 h-4"/> Edit
+            </button>
+            <button
+              onClick={() => { onDelete(note.id); setMenuOpen(false); }}
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-400/10"
+            >
+              <Trash2 className="w-4 h-4"/> Delete
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -124,7 +121,6 @@ function NoteCard({
   );
 }
 
-// ── NOTE EDITOR MODAL ──────────────────────────────────────────────────────────
 function NoteEditor({
   note, onSave, onClose,
 }: {
@@ -134,15 +130,8 @@ function NoteEditor({
 }) {
   const [title, setTitle] = useState(note?.title ?? '');
   const [content, setContent] = useState(note?.content ?? '');
-  const [color, setColor] = useState(note?.color ?? NOTE_COLORS[0].id);
+  const [color, setColor] = useState(note?.color ?? 'orange');
   const [saving, setSaving] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const colorConfig = getColor(color);
-
-  useEffect(() => {
-    const t = setTimeout(() => textareaRef.current?.focus(), 120);
-    return () => clearTimeout(t);
-  }, []);
 
   const handleSave = async () => {
     if (!title.trim() && !content.trim()) { onClose(); return; }
@@ -151,124 +140,75 @@ function NoteEditor({
     setSaving(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleSave();
-    if (e.key === 'Escape') onClose();
-  };
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.18 }}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-4 sm:pb-0"
-      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
       <motion.div
-        initial={{ y: 80, opacity: 0, scale: 0.96 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={{ y: 60, opacity: 0, scale: 0.96 }}
-        transition={{ type: 'spring', damping: 30, stiffness: 380 }}
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="w-full sm:max-w-md bg-[#111] sm:rounded-[40px] rounded-t-[40px] p-6 space-y-4 shadow-2xl h-[85vh] sm:h-auto flex flex-col border border-white/10"
         onClick={e => e.stopPropagation()}
-        onKeyDown={handleKeyDown}
-        className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-[28px] overflow-hidden shadow-2xl"
-        style={{ maxHeight: '88vh' }}
       >
-        {/* Color strip header */}
-        <div className={`h-1.5 w-full bg-gradient-to-r ${colorConfig.gradient} transition-all duration-300`} />
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-xl text-white">{note?.id ? 'Edit Note' : 'New Note'}</h3>
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center">
+            <Plus className="w-5 h-5 rotate-45" />
+          </button>
+        </div>
 
-        <div className="p-5 flex flex-col gap-4 overflow-y-auto">
-          {/* Title */}
-          <input
-            type="text"
-            placeholder="Title"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            className="w-full bg-transparent text-foreground font-black text-xl placeholder-muted-foreground/30 outline-none"
-          />
+        <input
+          type="text"
+          placeholder="Title"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          className="w-full bg-transparent text-white font-medium text-3xl placeholder-white/30 outline-none"
+        />
 
-          {/* Divider */}
-          <div className="h-px bg-border/50" />
+        <textarea
+          placeholder="Start writing..."
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          className="w-full flex-1 bg-transparent text-white/80 text-lg leading-relaxed font-medium outline-none resize-none placeholder-white/20 mt-4"
+        />
 
-          {/* Content */}
-          <textarea
-            ref={textareaRef}
-            placeholder="Start writing..."
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            rows={7}
-            className="w-full bg-transparent text-foreground/85 text-[15px] leading-relaxed placeholder-muted-foreground/30 outline-none resize-none"
-          />
-
-          {/* Color selector */}
-          <div className="flex items-center gap-3 pt-1">
-            <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">Theme</span>
-            <div className="flex gap-2 flex-1">
-              {NOTE_COLORS.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => setColor(c.id)}
-                  title={c.id}
-                  className={`h-6 flex-1 rounded-full bg-gradient-to-r ${c.gradient} transition-all active:scale-90 ${
-                    color === c.id ? 'ring-2 ring-offset-2 ring-foreground/30 scale-110' : 'opacity-70 hover:opacity-100'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Hint */}
-          <p className="text-muted-foreground/40 text-[10px] text-right">⌘↵ to save • Esc to close</p>
-
-          {/* Action buttons */}
-          <div className="flex gap-2.5">
+        <div className="flex items-center gap-3 pt-4 pb-2">
+          {NOTE_COLORS.map(c => (
             <button
-              onClick={onClose}
-              className="flex-1 bg-muted text-muted-foreground font-bold text-xs uppercase tracking-widest rounded-2xl py-3.5 transition-all active:scale-95 hover:bg-muted/80"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className={`flex-1 bg-gradient-to-r ${colorConfig.gradient} text-white font-black text-xs uppercase tracking-widest rounded-2xl py-3.5 shadow-lg transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2`}
-            >
-              {saving ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                note?.id ? 'Save' : 'Create'
-              )}
-            </button>
-          </div>
+              key={c.id}
+              onClick={() => setColor(c.id)}
+              className={`w-10 h-10 rounded-full ${c.bg} ${color === c.id ? 'ring-2 ring-white ring-offset-2 ring-offset-[#111] scale-110' : 'opacity-80'} transition-all`}
+            />
+          ))}
+        </div>
+
+        <div className="pt-2">
+          <button onClick={handleSave} disabled={saving} className="w-full bg-white text-black py-4 rounded-[24px] font-semibold text-lg hover:bg-white/90 transition-colors">
+            {saving ? 'Saving...' : 'Save Note'}
+          </button>
         </div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }
 
-// ── MAIN VIEW ──────────────────────────────────────────────────────────────────
 export default function NotesView() {
   const { profile, notes, addNote, updateNote, deleteNote } = useSupabase();
   const [editingNote, setEditingNote] = useState<Partial<Note> | 'new' | null>(null);
-  const [search, setSearch] = useState('');
-  const searchRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState('All');
 
   if (!profile) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
-        <div className="w-7 h-7 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
-  const q = search.toLowerCase();
-  const filtered = notes.filter(n =>
-    !q || n.title?.toLowerCase().includes(q) || n.content?.toLowerCase().includes(q)
-  );
-  const pinned = filtered.filter(n => n.pinned);
-  const rest = filtered.filter(n => !n.pinned);
+  const filtered = notes.filter(n => {
+    if (activeTab === 'Important') return n.pinned;
+    return true;
+  });
 
   const handleSave = async (title: string, content: string, color: string) => {
     if (editingNote && editingNote !== 'new' && (editingNote as Note).id) {
@@ -280,165 +220,84 @@ export default function NotesView() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f6fa] dark:bg-[#0a0a0a] pb-32">
-      <div className="max-w-md mx-auto px-4 pt-9">
+    <div className="min-h-screen bg-background text-foreground pb-32 select-none relative font-sans">
+      <div className="max-w-md mx-auto px-6 pt-12 space-y-8">
 
         {/* ── HEADER ── */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em]">Workspace</p>
-            <h1 className="text-[26px] font-black text-foreground leading-tight mt-0.5 tracking-tight">My Notes</h1>
-          </div>
-          <motion.button
-            whileTap={{ scale: 0.88 }}
-            onClick={() => setEditingNote('new')}
-            className="w-11 h-11 rounded-[16px] bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-violet-500/30"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </motion.button>
+        <div className="flex justify-between items-start">
+          <h1 className="text-5xl font-medium leading-[1.1] tracking-tight">
+            My<br/>Notes
+          </h1>
+          <button className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+            <LayoutGrid className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* ── SEARCH ── */}
-        <div className="relative mb-6">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </div>
-          <input
-            ref={searchRef}
-            type="text"
-            placeholder="Search notes…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full bg-white dark:bg-neutral-900/80 border border-border/60 rounded-[16px] pl-10 pr-10 py-3 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-foreground/20 transition-all shadow-sm"
-          />
-          <AnimatePresence>
-            {search && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                onClick={() => { setSearch(''); searchRef.current?.focus(); }}
-                className="absolute inset-y-0 right-3 flex items-center text-muted-foreground/50 hover:text-foreground transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </motion.button>
-            )}
-          </AnimatePresence>
+        {/* ── TABS ── */}
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 -mx-6 px-6 no-scrollbar">
+          <button
+            onClick={() => setActiveTab('All')}
+            className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
+              activeTab === 'All' ? 'border-white text-white' : 'border-white/20 text-white/50'
+            }`}
+          >
+            All <span className="ml-1 opacity-50 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">{notes.length}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('Important')}
+            className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
+              activeTab === 'Important' ? 'border-white text-white' : 'border-white/20 text-white/50'
+            }`}
+          >
+            Important
+          </button>
+          <button
+            onClick={() => setActiveTab('To-do')}
+            className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
+              activeTab === 'To-do' ? 'border-white text-white' : 'border-white/20 text-white/50'
+            }`}
+          >
+            To-do
+          </button>
         </div>
 
-        {/* ── STATS PILL ── */}
-        {notes.length > 0 && !search && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex gap-2 mb-5"
-          >
-            <div className="flex-1 bg-white dark:bg-neutral-900/80 rounded-2xl px-4 py-3 border border-border/50 flex items-center gap-2 shadow-sm">
-              <span className="text-xl">📝</span>
-              <div>
-                <p className="text-foreground font-black text-sm leading-none">{notes.length}</p>
-                <p className="text-muted-foreground text-[10px] font-semibold mt-0.5">Total notes</p>
-              </div>
+        {/* ── NOTES GRID ── */}
+        <div className="grid grid-cols-2 gap-4">
+          {filtered.length === 0 ? (
+            <div className="col-span-2 bg-white/5 rounded-[40px] p-12 text-center border border-white/5">
+              <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
+              <p className="text-lg font-medium text-white/70">No notes here</p>
+              <p className="text-sm text-white/40 mt-1">Tap + to add one</p>
             </div>
-            <div className="flex-1 bg-white dark:bg-neutral-900/80 rounded-2xl px-4 py-3 border border-border/50 flex items-center gap-2 shadow-sm">
-              <span className="text-xl">📌</span>
-              <div>
-                <p className="text-foreground font-black text-sm leading-none">{pinned.length}</p>
-                <p className="text-muted-foreground text-[10px] font-semibold mt-0.5">Pinned</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── EMPTY STATE ── */}
-        {filtered.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex flex-col items-center justify-center py-24 text-center"
-          >
-            <motion.div
-              animate={{ y: [0, -6, 0] }}
-              transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-              className="w-20 h-20 rounded-[24px] bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mb-5 shadow-xl shadow-violet-500/30"
-            >
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-              </svg>
-            </motion.div>
-            <p className="text-foreground font-black text-lg tracking-tight">
-              {search ? 'No results found' : 'Start taking notes'}
-            </p>
-            <p className="text-muted-foreground text-sm mt-1.5 max-w-[200px] leading-relaxed">
-              {search ? `Nothing matches "${search}"` : 'Capture ideas, plans, and thoughts'}
-            </p>
-            {!search && (
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setEditingNote('new')}
-                className="mt-7 bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-black text-sm uppercase tracking-widest px-8 py-4 rounded-2xl shadow-lg shadow-violet-500/30 active:scale-95 transition-all"
-              >
-                + New Note
-              </motion.button>
-            )}
-          </motion.div>
-        )}
-
-        {/* ── PINNED ── */}
-        {pinned.length > 0 && (
-          <section className="mb-6">
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em] mb-3">📌 Pinned</p>
-            <div className="grid grid-cols-2 gap-3">
-              <AnimatePresence mode="popLayout">
-                {pinned.map(note => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onEdit={n => setEditingNote(n)}
-                    onDelete={id => deleteNote(id)}
-                    onPin={(id, p) => updateNote(id, { pinned: p })}
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-          </section>
-        )}
-
-        {/* ── ALL NOTES ── */}
-        {rest.length > 0 && (
-          <section className="mb-4">
-            {pinned.length > 0 && (
-              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.18em] mb-3">All Notes</p>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <AnimatePresence mode="popLayout">
-                {rest.map(note => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onEdit={n => setEditingNote(n)}
-                    onDelete={id => deleteNote(id)}
-                    onPin={(id, p) => updateNote(id, { pinned: p })}
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-          </section>
-        )}
-
+          ) : (
+            filtered.map(n => (
+              <NoteCard
+                key={n.id}
+                note={n}
+                onEdit={note => setEditingNote(note)}
+                onDelete={id => deleteNote(id)}
+                onPin={(id, p) => updateNote(id, { pinned: p })}
+              />
+            ))
+          )}
+        </div>
       </div>
 
-      {/* ── EDITOR MODAL ── */}
+      {/* ── FLOATING BOTTOM ACTION BAR ── */}
+      <div className="fixed bottom-28 left-0 right-0 px-6 pointer-events-none flex justify-center z-30">
+        <div className="pointer-events-auto bg-[#1a1a1a]/80 backdrop-blur-2xl border border-white/10 px-2 py-2 rounded-[32px] flex items-center gap-2 shadow-2xl">
+          <button
+            onClick={() => setEditingNote('new')}
+            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+          >
+            <Plus className="w-6 h-6 stroke-[2.5]" />
+          </button>
+          <button className="w-14 h-14 rounded-full text-white/70 flex items-center justify-center hover:bg-white/10 transition-colors">
+            <Mic className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
       <AnimatePresence>
         {editingNote !== null && (
           <NoteEditor
