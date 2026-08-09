@@ -3,6 +3,7 @@ import Dexie, { type Table } from 'dexie';
 export interface Profile {
   id: string;
   name: string;
+  email?: string;
   streak: number;
   lastCompletedTaskDate?: string;
   timezone: string;

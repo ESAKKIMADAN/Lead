@@ -8,10 +8,11 @@ import { type User, type Session } from '@supabase/supabase-js';
 export interface Profile {
   id: string;
   name: string;
+  email?: string;
   streak: number;
-  last_completed_task_date?: string;
+  last_completed_task_date: string | null;
   timezone: string;
-  created_at: string;
+  created_at?: string;
 }
 
 export interface Ego {
@@ -369,6 +370,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .insert({
           id: user.id,
           name: name.trim(),
+          email: user.email,
           streak: 0,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         })
