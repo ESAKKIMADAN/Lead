@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { type Ego, type Profile } from '@/lib/db';
+import { type Ego, type Profile } from '@/lib/SupabaseContext';
+import { useSupabase } from '@/lib/SupabaseContext';
 import { useEffect, useRef, useState } from 'react';
 import { X, Target } from 'lucide-react';
 
@@ -11,6 +12,7 @@ interface Message {
 }
 
 export default function ChatInterface({ profile, ego, onClose }: { profile: Profile, ego: Ego, onClose: () => void }) {
+  const { addTask, addNote } = useSupabase();
   const [messages, setMessages] = useState<Message[]>([]);
   const [localInput, setLocalInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -64,13 +66,27 @@ export default function ChatInterface({ profile, ego, onClose }: { profile: Prof
             try {
               const parsed = JSON.parse(line.slice(2));
               fullText += parsed;
-              setStreamingText(fullText);
+              setStreamingText(fullText.replace(/\[ACTION:[\s\S]*?\]/g, '').trimStart());
             } catch {}
           }
         }
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: fullText }]);
+      const actionRegex = /\[ACTION:(TASK|NOTE)\|([\s\S]*?)\]/g;
+      let match;
+      while ((match = actionRegex.exec(fullText)) !== null) {
+        const type = match[1];
+        const params = match[2].split('|');
+        if (type === 'TASK') {
+          const [title, taskType, time, date] = params;
+          addTask(title, (taskType as any) || 'short_term', time, date || new Date().toISOString());
+        } else if (type === 'NOTE') {
+          const [title, content, color] = params;
+          addNote(title, content, color || 'orange');
+        }
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', content: fullText.replace(/\[ACTION:[\s\S]*?\]/g, '').trim() }]);
       setStreamingText('');
     } catch (err) {
       console.error(err);

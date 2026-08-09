@@ -18,7 +18,7 @@ const QUICK_PROMPTS = [
 ];
 
 export default function HomeChat() {
-  const { profile, ego, tasks } = useSupabase();
+  const { profile, ego, tasks, addTask, addNote } = useSupabase();
 
   const todayStr = new Date().toDateString();
   const todayTasks = tasks ? tasks.filter(t => t.type === 'short_term').filter(task => {
@@ -145,12 +145,27 @@ export default function HomeChat() {
                 try {
                   const parsed = JSON.parse(line.slice(2));
                   fullText += parsed;
-                  setStreamingText(fullText);
+                  setStreamingText(fullText.replace(/\[ACTION:[\s\S]*?\]/g, '').trimStart());
                 } catch {}
               }
             }
           }
-          setMessages([{ role: 'assistant', content: fullText }]);
+
+          const actionRegex = /\[ACTION:(TASK|NOTE)\|([\s\S]*?)\]/g;
+          let match;
+          while ((match = actionRegex.exec(fullText)) !== null) {
+            const type = match[1];
+            const params = match[2].split('|');
+            if (type === 'TASK') {
+              const [title, taskType, time, date] = params;
+              addTask(title, (taskType as any) || 'short_term', time, date || new Date().toISOString());
+            } else if (type === 'NOTE') {
+              const [title, content, color] = params;
+              addNote(title, content, color || 'orange');
+            }
+          }
+
+          setMessages([{ role: 'assistant', content: fullText.replace(/\[ACTION:[\s\S]*?\]/g, '').trim() }]);
           setStreamingText('');
         } catch {
           setMessages([
@@ -219,13 +234,27 @@ export default function HomeChat() {
             try {
               const parsed = JSON.parse(line.slice(2));
               fullText += parsed;
-              setStreamingText(fullText);
+              setStreamingText(fullText.replace(/\[ACTION:[\s\S]*?\]/g, '').trimStart());
             } catch {}
           }
         }
       }
       
-      setMessages((prev) => [...prev, { role: 'assistant', content: fullText }]);
+      const actionRegex = /\[ACTION:(TASK|NOTE)\|([\s\S]*?)\]/g;
+      let match;
+      while ((match = actionRegex.exec(fullText)) !== null) {
+        const type = match[1];
+        const params = match[2].split('|');
+        if (type === 'TASK') {
+          const [title, taskType, time, date] = params;
+          addTask(title, (taskType as any) || 'short_term', time, date || new Date().toISOString());
+        } else if (type === 'NOTE') {
+          const [title, content, color] = params;
+          addNote(title, content, color || 'orange');
+        }
+      }
+
+      setMessages((prev) => [...prev, { role: 'assistant', content: fullText.replace(/\[ACTION:[\s\S]*?\]/g, '').trim() }]);
       setStreamingText('');
     } catch {
       setMessages((prev) => [
