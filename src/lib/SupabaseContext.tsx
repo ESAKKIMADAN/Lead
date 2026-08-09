@@ -74,6 +74,9 @@ interface SupabaseContextType {
   signUp: (email: string, name: string, pin: string) => Promise<boolean>;
   signIn: (email: string, pin: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  resetPin: (email: string) => Promise<boolean>;
+  updatePin: (newPin: string) => Promise<boolean>;
+  getEmailByUsername: (username: string) => Promise<string | null>;
   createInitialData: (name: string, goals: { goal: string; reason: string }[]) => Promise<void>;
   updateProfileName: (name: string) => Promise<void>;
   updateEgo: (id: string, updates: Partial<Ego>) => Promise<void>;
@@ -267,7 +270,11 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        setAuthError(error.message);
+        if (error.message.toLowerCase().includes('already registered')) {
+          setAuthError('This username is already taken. Please choose a different one.');
+        } else {
+          setAuthError(error.message);
+        }
         return false;
       }
 
@@ -298,7 +305,51 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
       return true;
     } catch (err: any) {
-      setAuthError(err.message || 'An unexpected error occurred during sign in.');
+      setAuthError(err.message || 'An unexpected error occurred during login.');
+      return false;
+    }
+  };
+
+  const getEmailByUsername = async (username: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.rpc('get_email_by_username', { p_username: username });
+      if (error) throw error;
+      return data || null;
+    } catch (err: any) {
+      console.error('Error fetching email by username:', err.message);
+      return null;
+    }
+  };
+
+  const resetPin = async (email: string): Promise<boolean> => {
+    setAuthError(null);
+    try {
+      // Provide a redirectUrl if needed, e.g. window.location.origin + '/reset-pin'
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
+      });
+      if (error) {
+        setAuthError(error.message);
+        return false;
+      }
+      return true;
+    } catch (err: any) {
+      setAuthError(err.message || 'An unexpected error occurred.');
+      return false;
+    }
+  };
+
+  const updatePin = async (newPin: string): Promise<boolean> => {
+    setAuthError(null);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: padPassword(newPin) });
+      if (error) {
+        setAuthError(error.message);
+        return false;
+      }
+      return true;
+    } catch (err: any) {
+      setAuthError(err.message || 'An unexpected error occurred.');
       return false;
     }
   };

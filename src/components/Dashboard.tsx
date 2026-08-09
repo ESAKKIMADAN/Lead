@@ -442,7 +442,7 @@ export default function Dashboard() {
       )}
 
       {showChat && (
-        <ChatInterface profile={profile} ego={ego} onClose={() => setShowChat(false)} />
+        <ChatInterface profile={profile as any} ego={ego as any} onClose={() => setShowChat(false)} />
       )}
 
       {showAddTask && (

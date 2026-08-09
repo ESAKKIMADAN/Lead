@@ -352,7 +352,7 @@ export default function HomeChat() {
         {isLoading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-start">
             <div className="px-6 py-4 rounded-[32px] rounded-tl-lg bg-[#151515] border border-white/5 text-white/70 text-[15px] leading-relaxed max-w-[85%]">
-              {streamingText || 'Generating...'}
+              {streamingText || 'Thinking...'}
             </div>
           </motion.div>
         )}

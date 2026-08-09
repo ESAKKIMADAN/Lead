@@ -5,19 +5,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { ChevronRight, LogOut, Trash2, User, Bell, Moon, Target, ChevronLeft, Check } from 'lucide-react';
 
-type ScreenState = 'main' | 'profile' | 'ego' | 'notifications' | 'about' | 'faq' | 'deactivate';
+type ScreenState = 'main' | 'profile' | 'ego' | 'notifications' | 'pin' | 'about' | 'faq' | 'deactivate';
 
 interface AccountViewProps {
   onBack?: () => void;
 }
 
 export default function AccountView({ onBack }: AccountViewProps) {
-  const { profile, ego, updateProfileName, updateEgo, resetAllData, signOut } = useSupabase();
+  const { profile, ego, updateProfileName, updateEgo, updatePin, resetAllData, signOut, authError } = useSupabase();
   
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('main');
   const [editName, setEditName] = useState('');
   const [editGoal, setEditGoal] = useState('');
   const [editReason, setEditReason] = useState('');
+  const [newPin, setNewPin] = useState('');
   const [saving, setSaving] = useState(false);
   
   const hasNotificationSupport = typeof window !== 'undefined' && 'Notification' in window;
@@ -76,6 +77,17 @@ export default function AccountView({ onBack }: AccountViewProps) {
     });
     setSaving(false);
     setCurrentScreen('main');
+  };
+
+  const handleUpdatePin = async () => {
+    if (!/^\d{4}$/.test(newPin)) return;
+    setSaving(true);
+    const success = await updatePin(newPin);
+    setSaving(false);
+    if (success) {
+      setCurrentScreen('main');
+      setNewPin('');
+    }
   };
 
   const requestNotificationPermission = async () => {
@@ -181,6 +193,21 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     </div>
                   </div>
 
+                  {/* Change PIN */}
+                  <div 
+                    onClick={() => {
+                      setNewPin('');
+                      setCurrentScreen('pin');
+                    }}
+                    className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5"
+                  >
+                    <div className="flex items-center gap-4 text-white">
+                      <User className="w-5 h-5 opacity-60" />
+                      <span className="text-lg font-medium">Change PIN</span>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-white/30" />
+                  </div>
+
                   {/* Dark Mode */}
                   <div className="flex items-center justify-between px-6 py-5">
                     <div className="flex items-center gap-4 text-white">
@@ -227,6 +254,52 @@ export default function AccountView({ onBack }: AccountViewProps) {
                   <ChevronRight className="w-5 h-5 opacity-40" />
                 </div>
               </div>
+            </motion.div>
+          )}
+
+          {/* SCREEN: CHANGE PIN */}
+          {currentScreen === 'pin' && (
+            <motion.div
+              key="pin"
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -16 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              <div className="bg-[#151515] border border-white/5 rounded-[40px] p-6 space-y-6 shadow-sm">
+                <p className="text-sm font-semibold text-white/40 uppercase tracking-widest pl-2">Update PIN</p>
+                
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-white/50 uppercase tracking-wider pl-2 block">New 4-Digit PIN</label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={4}
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                    className="w-full bg-[#0a0a0a] border border-white/10 text-white rounded-3xl px-6 py-4 outline-none focus:border-white/20 transition-colors text-center tracking-[1em] font-mono text-xl"
+                    placeholder="••••"
+                  />
+                </div>
+
+                {authError && (
+                  <div className="text-sm text-red-500 text-center">{authError}</div>
+                )}
+              </div>
+              
+              <button
+                onClick={handleUpdatePin}
+                disabled={saving || !/^\d{4}$/.test(newPin)}
+                className="w-full bg-white text-black py-4 rounded-full font-bold tracking-wide hover:bg-neutral-200 active:scale-[0.98] transition-all flex justify-center disabled:opacity-50"
+              >
+                {saving ? (
+                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  'Update PIN'
+                )}
+              </button>
             </motion.div>
           )}
 
