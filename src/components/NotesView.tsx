@@ -228,8 +228,11 @@ export default function NotesView() {
           <h1 className="text-5xl font-medium leading-[1.1] tracking-tight">
             My<br/>Notes
           </h1>
-          <button className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-            <LayoutGrid className="w-5 h-5" />
+          <button
+            onClick={() => setEditingNote('new')}
+            className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+          >
+            <Plus className="w-6 h-6 stroke-[2.5]" />
           </button>
         </div>
 
@@ -283,20 +286,6 @@ export default function NotesView() {
         </div>
       </div>
 
-      {/* ── FLOATING BOTTOM ACTION BAR ── */}
-      <div className="fixed bottom-28 left-0 right-0 px-6 pointer-events-none flex justify-center z-30">
-        <div className="pointer-events-auto bg-[#1a1a1a]/80 backdrop-blur-2xl border border-white/10 px-2 py-2 rounded-[32px] flex items-center gap-2 shadow-2xl">
-          <button
-            onClick={() => setEditingNote('new')}
-            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
-          >
-            <Plus className="w-6 h-6 stroke-[2.5]" />
-          </button>
-          <button className="w-14 h-14 rounded-full text-white/70 flex items-center justify-center hover:bg-white/10 transition-colors">
-            <Mic className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
 
       <AnimatePresence>
         {editingNote !== null && (

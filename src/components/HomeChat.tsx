@@ -198,12 +198,9 @@ export default function HomeChat() {
 
       {/* ── HEADER ── */}
       <header className="px-6 py-8 flex items-center justify-between sticky top-0 z-40 bg-gradient-to-b from-black via-black/80 to-transparent">
-        <h1 className="text-4xl font-medium leading-[1.1] tracking-tight text-white">
-          Lead<br/>AI
+        <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-white">
+          Lead
         </h1>
-        <div className="w-12 h-12 rounded-full bg-card-orange text-black flex items-center justify-center">
-          <Sparkles className="w-6 h-6" />
-        </div>
       </header>
 
       {/* ── MESSAGES ── */}

@@ -77,9 +77,12 @@ export default function TodoView() {
           <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-white">
             My<br/>Tasks
           </h1>
-          <div className="w-12 h-12 rounded-full bg-card-mint text-black flex items-center justify-center font-bold text-lg">
-            {profile.name.charAt(0).toUpperCase()}
-          </div>
+          <button
+            onClick={() => setShowInput(true)}
+            className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+          >
+            <Plus className="w-6 h-6 stroke-[2.5]" />
+          </button>
         </div>
 
         {/* ── TABS ── */}
@@ -202,17 +205,6 @@ export default function TodoView() {
 
       </div>
 
-      {/* ── FLOATING BOTTOM ACTION BAR ── */}
-      <div className="fixed bottom-28 left-0 right-0 px-6 pointer-events-none flex justify-center z-30">
-        <div className="pointer-events-auto bg-[#1a1a1a]/80 backdrop-blur-2xl border border-white/10 px-2 py-2 rounded-[32px] flex items-center gap-2 shadow-2xl">
-          <button
-            onClick={() => setShowInput(true)}
-            className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
-          >
-            <Plus className="w-6 h-6 stroke-[2.5]" />
-          </button>
-        </div>
-      </div>
 
       {/* ── ADD TASK MODAL ── */}
       <AnimatePresence>
