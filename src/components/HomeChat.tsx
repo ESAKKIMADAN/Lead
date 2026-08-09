@@ -3,7 +3,7 @@
 import { useSupabase } from '@/lib/SupabaseContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { Target, Zap, ArrowUp, Sparkles, MessageCircle } from 'lucide-react';
+import { Target, Zap, ArrowUp, Mic } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -41,6 +41,63 @@ export default function HomeChat() {
 
   const [activeEgoId, setActiveEgoId] = useState<string | null>(null);
   const [hasTriggeredGreeting, setHasTriggeredGreeting] = useState(false);
+
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef('');
+  const sendMessageRef = useRef<(text: string) => void>(() => {});
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        
+        recognition.onstart = () => {
+          setIsListening(true);
+          transcriptRef.current = '';
+        };
+        recognition.onend = () => {
+          setIsListening(false);
+          if (transcriptRef.current.trim()) {
+            sendMessageRef.current(transcriptRef.current);
+            transcriptRef.current = '';
+          }
+        };
+        
+        recognition.onresult = (event: any) => {
+          let transcript = '';
+          for (let i = 0; i < event.results.length; ++i) {
+            transcript += event.results[i][0].transcript;
+          }
+          setInput(transcript);
+          transcriptRef.current = transcript;
+        };
+        
+        recognitionRef.current = recognition;
+      }
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert("Voice recognition is not supported in your browser. Please try Chrome or Edge.");
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      setInput('');
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error("Speech recognition error:", e);
+        setIsListening(false);
+      }
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -167,7 +224,7 @@ export default function HomeChat() {
           }
         }
       }
-
+      
       setMessages((prev) => [...prev, { role: 'assistant', content: fullText }]);
       setStreamingText('');
     } catch {
@@ -180,6 +237,10 @@ export default function HomeChat() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  }, [messages, isLoading, profile, ego]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,9 +335,15 @@ export default function HomeChat() {
       <div className="absolute bottom-28 left-0 right-0 px-6 z-30">
         <form onSubmit={handleSubmit} className="relative max-w-xl mx-auto">
           <div className="flex items-center bg-[#1a1a1a]/90 backdrop-blur-2xl border border-white/10 rounded-[40px] p-2 shadow-2xl">
-            <div className="w-12 h-12 flex items-center justify-center flex-shrink-0 text-white/50">
-              <MessageCircle className="w-5 h-5" />
-            </div>
+            <button 
+              type="button"
+              onClick={toggleListening}
+              className={`w-12 h-12 flex items-center justify-center flex-shrink-0 transition-colors ${
+                isListening ? 'text-card-orange animate-pulse' : 'text-white/50 hover:text-white'
+              }`}
+            >
+              <Mic className="w-5 h-5" />
+            </button>
             <textarea
               ref={inputRef}
               rows={1}
