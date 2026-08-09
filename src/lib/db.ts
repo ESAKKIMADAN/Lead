@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie';
 
 export interface Profile {
   id: string;
+  username: string;
   name: string;
   email?: string;
   streak: number;

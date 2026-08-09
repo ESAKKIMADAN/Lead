@@ -7,6 +7,7 @@ import { type User, type Session } from '@supabase/supabase-js';
 // Types mimicking original Dexie structure
 export interface Profile {
   id: string;
+  username: string;
   name: string;
   email?: string;
   streak: number;
@@ -369,6 +370,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .from('profiles')
         .insert({
           id: user.id,
+          username: user.user_metadata?.display_name || '',
           name: name.trim(),
           email: user.email,
           streak: 0,

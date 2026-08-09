@@ -139,7 +139,8 @@ CREATE POLICY "Users can insert own notes" ON public.notes
 -- 1. Profiles Table
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
-  name TEXT UNIQUE NOT NULL,
+  username TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
   email TEXT,
   streak INTEGER DEFAULT 0 NOT NULL,
   last_completed_task_date TEXT,
