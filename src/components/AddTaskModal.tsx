@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { db } from '@/lib/db';
+import { useSupabase } from '@/lib/SupabaseContext';
 
 export default function AddTaskModal({ 
   profileId, 
@@ -11,6 +11,7 @@ export default function AddTaskModal({
   profileId: string, 
   onClose: () => void 
 }) {
+  const { addTask } = useSupabase();
   const [title, setTitle] = useState('');
   const [type, setType] = useState<'short_term' | 'long_term'>('short_term');
   const [scheduledTime, setScheduledTime] = useState('');
@@ -20,16 +21,12 @@ export default function AddTaskModal({
     e.preventDefault();
     if (!title.trim()) return;
 
-    await db.tasks.add({
-      id: crypto.randomUUID(),
-      userId: profileId,
-      title: title.trim(),
+    await addTask(
+      title.trim(),
       type,
-      scheduledTime: type === 'short_term' ? scheduledTime : undefined,
-      targetDate: type === 'long_term' ? targetDate : undefined,
-      completed: false,
-      createdAt: new Date().toISOString(),
-    });
+      type === 'short_term' ? scheduledTime || undefined : undefined,
+      type === 'long_term' ? targetDate || undefined : undefined
+    );
 
     onClose();
   };
