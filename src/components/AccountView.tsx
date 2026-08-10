@@ -149,40 +149,40 @@ export default function AccountView({ onBack }: AccountViewProps) {
         return;
       }
 
-      // Get or register SW
+      // Get or register SW with auto-heal for stale workers
       let registration: ServiceWorkerRegistration;
       try {
         let reg = await navigator.serviceWorker.getRegistration('/');
-        if (!reg) {
+        if (!reg || !reg.active) {
+          if (reg) {
+            await reg.unregister();
+          }
           reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         }
         registration = reg;
 
-        // If worker is not active yet, activate it and wait for ready
+        // If worker is still installing/waiting, send SKIP_WAITING and poll for activation
         if (!registration.active) {
           const target = registration.waiting || registration.installing;
           if (target) {
             target.postMessage({ type: 'SKIP_WAITING' });
           }
-          try {
-            registration = await Promise.race([
-              navigator.serviceWorker.ready,
-              new Promise<ServiceWorkerRegistration>((_, reject) =>
-                setTimeout(() => reject(new Error('SW activation timed out')), 4000)
-              ),
-            ]);
-          } catch (e) {
-            // Re-fetch registration to see if active now
-            const refreshed = await navigator.serviceWorker.getRegistration('/');
-            if (refreshed?.active) {
-              registration = refreshed;
+
+          let attempts = 0;
+          while (!registration.active && attempts < 15) {
+            await new Promise((res) => setTimeout(res, 200));
+            attempts++;
+            const check = await navigator.serviceWorker.getRegistration('/');
+            if (check?.active) {
+              registration = check;
+              break;
             }
           }
         }
 
         if (!registration.active) {
           setPushStatus('error');
-          setPushMessage('Service worker is activating. Please refresh the page and click Re-register.');
+          setPushMessage('Service worker could not activate. Try opening in an Incognito tab or clear site data.');
           return;
         }
       } catch (swErr: any) {
@@ -190,6 +190,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
         setPushMessage('SW error: ' + swErr.message);
         return;
       }
+
 
 
 
