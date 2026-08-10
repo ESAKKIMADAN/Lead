@@ -187,7 +187,6 @@ export default function HomeChat() {
     }
   }, [input]);
 
-  if (!profile || !ego) return null;
 
   const hour = new Date().getHours();
   const greeting =
@@ -195,7 +194,7 @@ export default function HomeChat() {
 
   const sendMessage = async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || isLoading || !profile || !ego) return;
 
     const userMsg: Message = { role: 'user', content: trimmed };
     const updatedMessages = [...messages, userMsg];
@@ -282,6 +281,8 @@ export default function HomeChat() {
       sendMessage(input);
     }
   };
+
+  if (!profile || !ego) return null;
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden select-none font-sans relative">
