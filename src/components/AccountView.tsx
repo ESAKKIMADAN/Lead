@@ -149,13 +149,31 @@ export default function AccountView({ onBack }: AccountViewProps) {
         return;
       }
 
-      // Get or register SW
+      // Get or register SW with timeout (ready can hang if SW is stuck updating)
       let registration: ServiceWorkerRegistration;
       try {
-        registration = await navigator.serviceWorker.ready;
+        // Register if needed
+        const existing = await navigator.serviceWorker.getRegistration('/');
+        if (!existing) {
+          await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        }
+
+        // Force any waiting SW to activate immediately
+        const reg = await navigator.serviceWorker.getRegistration('/');
+        if (reg?.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+
+        // Wait for ready with 8s timeout
+        registration = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Service worker timed out. Try refreshing the page and retry.')), 8000)
+          ),
+        ]);
       } catch (swErr: any) {
         setPushStatus('error');
-        setPushMessage('Service worker error: ' + swErr.message);
+        setPushMessage('SW error: ' + swErr.message);
         return;
       }
 
