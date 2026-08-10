@@ -21,6 +21,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
   const [editReason, setEditReason] = useState('');
   const [newPin, setNewPin] = useState('');
   const [saving, setSaving] = useState(false);
+  const [enablingPush, setEnablingPush] = useState(false);
   const [pushStatus, setPushStatus] = useState<'idle' | 'success' | 'error' | 'no_sub'>('idle');
   const [pushMessage, setPushMessage] = useState('');
 
@@ -107,46 +108,81 @@ export default function AccountView({ onBack }: AccountViewProps) {
   };
 
   const requestNotificationPermission = async () => {
-    if (!hasNotificationSupport) return;
+    if (!hasNotificationSupport) {
+      setPushStatus('error');
+      setPushMessage('This browser does not support notifications.');
+      return;
+    }
+
+    setEnablingPush(true);
     setPushStatus('idle');
     setPushMessage('');
 
-    const result = await Notification.requestPermission();
-    setPermissionState(result);
-
-    if (result !== 'granted') return;
-    if (!('serviceWorker' in navigator)) return;
-
     try {
-      // Ensure SW is registered
-      let registration = await navigator.serviceWorker.getRegistration('/');
-      if (!registration) {
-        registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        // Wait for it to become active
-        await new Promise<void>((resolve) => {
-          if (registration!.active) { resolve(); return; }
-          const sw = registration!.installing || registration!.waiting;
-          if (sw) sw.addEventListener('statechange', () => { if (sw.state === 'activated') resolve(); });
-          else resolve();
-        });
-      }
-      await navigator.serviceWorker.ready;
+      const result = await Notification.requestPermission();
+      setPermissionState(result);
 
-      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapidPublicKey) {
-        console.error('VAPID public key not set in env');
+      if (result === 'denied') {
+        setPushStatus('error');
+        setPushMessage('Permission denied. Please allow notifications in your browser settings.');
+        setEnablingPush(false);
         return;
       }
 
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-      });
+      if (result !== 'granted') {
+        setEnablingPush(false);
+        return;
+      }
+
+      if (!('serviceWorker' in navigator)) {
+        setPushStatus('error');
+        setPushMessage('Service workers not supported in this browser.');
+        setEnablingPush(false);
+        return;
+      }
+
+      // Register SW if not already registered
+      let registration: ServiceWorkerRegistration | undefined;
+      try {
+        registration = await navigator.serviceWorker.getRegistration('/');
+        if (!registration) {
+          registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        }
+        // Wait for SW to be active
+        await navigator.serviceWorker.ready;
+      } catch (swErr: any) {
+        setPushStatus('error');
+        setPushMessage('Service worker failed to register: ' + swErr.message);
+        setEnablingPush(false);
+        return;
+      }
+
+      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidPublicKey) {
+        setPushStatus('error');
+        setPushMessage('Push not configured on server. Contact support.');
+        setEnablingPush(false);
+        return;
+      }
+
+      // Subscribe to push
+      let subscription: PushSubscription;
+      try {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        });
+      } catch (subErr: any) {
+        setPushStatus('error');
+        setPushMessage('Push subscribe failed: ' + subErr.message);
+        setEnablingPush(false);
+        return;
+      }
 
       const subJSON = subscription.toJSON();
 
-      // Upsert — handles both first-time and renewed subscriptions
-      await supabase.from('push_subscriptions').upsert(
+      // Save to Supabase
+      const { error: dbErr } = await supabase.from('push_subscriptions').upsert(
         {
           user_id: profile?.id,
           endpoint: subJSON.endpoint,
@@ -156,11 +192,22 @@ export default function AccountView({ onBack }: AccountViewProps) {
         { onConflict: 'user_id,endpoint' }
       );
 
+      if (dbErr) {
+        setPushStatus('error');
+        setPushMessage('Saved locally but failed to sync: ' + dbErr.message);
+        setEnablingPush(false);
+        return;
+      }
+
+      setPushStatus('success');
+      setPushMessage('Device registered! You can now send a test push.');
       console.log('[Push] Subscription saved.');
     } catch (error: any) {
-      console.error('[Push] Subscribe error:', error);
+      console.error('[Push] Unexpected error:', error);
       setPushStatus('error');
-      setPushMessage('Could not subscribe: ' + (error?.message || 'unknown error'));
+      setPushMessage('Unexpected error: ' + (error?.message || 'unknown'));
+    } finally {
+      setEnablingPush(false);
     }
   };
 
@@ -515,12 +562,28 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
                 <div className="bg-white/5 rounded-3xl p-5 flex flex-col items-center text-center gap-4">
                   {permissionState !== 'granted' && permissionState !== 'unsupported' ? (
-                    <button
-                      onClick={requestNotificationPermission}
-                      className="bg-card-orange text-black px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full"
-                    >
-                      Enable Push Alerts
-                    </button>
+                    <div className="flex flex-col gap-3 w-full">
+                      <button
+                        onClick={requestNotificationPermission}
+                        disabled={enablingPush}
+                        className="bg-card-orange text-black px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full flex items-center justify-center gap-2 disabled:opacity-70 transition-all"
+                      >
+                        {enablingPush ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                            Enabling...
+                          </>
+                        ) : (
+                          'Enable Push Alerts'
+                        )}
+                      </button>
+                      {/* Show error if enabling failed */}
+                      {pushStatus === 'error' && (
+                        <div className="w-full bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 text-red-400 text-sm font-medium text-left">
+                          ✗ {pushMessage}
+                        </div>
+                      )}
+                    </div>
                   ) : permissionState === 'granted' ? (
                     <div className="flex flex-col items-center gap-4 w-full">
                       <div className="flex items-center gap-2 text-black bg-card-mint px-5 py-3 rounded-full font-bold text-sm">
