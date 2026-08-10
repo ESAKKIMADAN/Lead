@@ -30,23 +30,8 @@ export default function Dashboard() {
   useEffect(() => {
     const updateNextReminder = () => {
       const now = new Date();
-      const times = [8, 12, 18]; // 8:00 AM, 12:00 PM, 6:00 PM
-      let targetTime = null;
-      
-      for (const hour of times) {
-        const target = new Date();
-        target.setHours(hour, 0, 0, 0);
-        if (target > now) {
-          targetTime = target;
-          break;
-        }
-      }
-      
-      if (!targetTime) {
-        targetTime = new Date();
-        targetTime.setDate(targetTime.getDate() + 1);
-        targetTime.setHours(8, 0, 0, 0);
-      }
+      const targetTime = new Date(now);
+      targetTime.setHours(now.getHours() + 1, 0, 0, 0);
       
       setNextReminderTime(targetTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }));
     };
@@ -91,6 +76,8 @@ export default function Dashboard() {
           simulateLead('lunch');
         } else if (hours === 18) {
           simulateLead('evening');
+        } else {
+          simulateLead('hourly');
         }
       }
     }, 60000); // Check every minute
@@ -128,7 +115,7 @@ export default function Dashboard() {
     setShowCheckIn(false);
   };
 
-  const simulateLead = async (timeOfDay: 'morning' | 'lunch' | 'evening') => {
+  const simulateLead = async (timeOfDay: 'morning' | 'lunch' | 'evening' | 'hourly') => {
     if ('Notification' in window && Notification.permission !== 'granted') {
       await Notification.requestPermission();
     }

@@ -37,7 +37,7 @@ export interface NotificationLog {
   id: string;
   userId: string;
   taskId: string;
-  timeOfDay: 'morning' | 'lunch' | 'evening';
+  timeOfDay: 'morning' | 'lunch' | 'evening' | 'hourly';
   notificationTitle: string;
   notificationBody: string;
   tone: string;
