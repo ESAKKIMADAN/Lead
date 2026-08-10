@@ -100,6 +100,11 @@ export default function Dashboard() {
     seedTasks();
   }, [profile]);
 
+  const hasNotificationSupport = typeof window !== 'undefined' && 'Notification' in window;
+  const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>(
+    hasNotificationSupport ? Notification.permission : 'unsupported'
+  );
+
   if (!profile || !ego) return null;
 
   const completedTasksCount = tasks.filter(t => t.completed).length;
@@ -232,11 +237,6 @@ export default function Dashboard() {
   // Time-based greeting
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
-
-  const hasNotificationSupport = typeof window !== 'undefined' && 'Notification' in window;
-  const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>(
-    hasNotificationSupport ? Notification.permission : 'unsupported'
-  );
 
   const requestNotificationPermission = async () => {
     if (hasNotificationSupport) {

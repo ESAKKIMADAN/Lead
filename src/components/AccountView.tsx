@@ -1,6 +1,7 @@
 'use client';
 
 import { useSupabase } from '@/lib/SupabaseContext';
+import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { ChevronRight, LogOut, Trash2, User, Bell, Moon, Target, ChevronLeft, Check } from 'lucide-react';
