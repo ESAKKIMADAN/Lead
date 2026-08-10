@@ -77,27 +77,25 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-10">
-        <div className="relative flex items-center justify-center w-24 h-24">
-          <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-foreground/20 border-r-foreground/10 animate-spin" style={{ animationDuration: '1.2s' }} />
-          <img src="/logo.svg" alt="LEAD" className="w-9 h-9 object-contain" />
-        </div>
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-foreground text-base font-bold tracking-[0.25em] uppercase">LEAD</p>
-          <p className="text-muted-foreground text-[11px] font-medium tracking-[0.3em] uppercase">by SolveCrew</p>
-        </div>
-        <div className="w-40 h-[2px] rounded-full bg-foreground/5 overflow-hidden relative">
-          <div
-            className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-foreground/30 to-transparent rounded-full"
-            style={{ animation: 'shimmer 1.4s ease-in-out infinite' }}
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="flex flex-col items-center gap-8"
+        >
+          <motion.img 
+            src="/logo.svg" 
+            alt="LEAD" 
+            className="w-10 h-10 object-contain"
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
           />
-        </div>
-        <style>{`
-          @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(300%); }
-          }
-        `}</style>
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-foreground text-lg font-bold tracking-[0.3em] uppercase">LEAD</p>
+            <p className="text-muted-foreground text-[10px] font-semibold tracking-[0.4em] uppercase">by SolveCrew</p>
+          </div>
+        </motion.div>
       </div>
     );
   }
