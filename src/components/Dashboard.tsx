@@ -59,31 +59,6 @@ export default function Dashboard() {
     }
   }, [profile]);
 
-  // Scheduler for reminders at 8:00 AM, 12:00 PM, and 6:00 PM
-  useEffect(() => {
-    if (!profile || !ego) return;
-
-    const interval = setInterval(() => {
-      const now = new Date();
-      const minutes = now.getMinutes();
-      const hours = now.getHours();
-
-      // Trigger at the start of the hour
-      if (minutes === 0) {
-        if (hours === 8) {
-          simulateLead('morning');
-        } else if (hours === 12) {
-          simulateLead('lunch');
-        } else if (hours === 18) {
-          simulateLead('evening');
-        } else {
-          simulateLead('hourly');
-        }
-      }
-    }, 60000); // Check every minute
-
-    return () => clearInterval(interval);
-  }, [profile, ego]);
 
   useEffect(() => {
     async function seedTasks() {

@@ -126,12 +126,21 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
           // Save subscription to Supabase
           const subJSON = subscription.toJSON();
-          await supabase.from('push_subscriptions').insert({
-            user_id: profile?.id,
-            endpoint: subJSON.endpoint,
-            p256dh: subJSON.keys?.p256dh,
-            auth: subJSON.keys?.auth,
-          });
+          
+          const { data: existing } = await supabase
+            .from('push_subscriptions')
+            .select('id')
+            .eq('endpoint', subJSON.endpoint)
+            .single();
+
+          if (!existing) {
+            await supabase.from('push_subscriptions').insert({
+              user_id: profile?.id,
+              endpoint: subJSON.endpoint,
+              p256dh: subJSON.keys?.p256dh,
+              auth: subJSON.keys?.auth,
+            });
+          }
           
           console.log('Push subscription saved successfully.');
         } catch (error) {
