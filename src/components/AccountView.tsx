@@ -123,48 +123,50 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
       if (result === 'denied') {
         setPushStatus('error');
-        setPushMessage('Permission denied. Please allow notifications in your browser settings.');
-        setEnablingPush(false);
+        setPushMessage('Permission denied. Go to browser Settings → Notifications → Allow for this site.');
         return;
       }
 
-      if (result !== 'granted') {
-        setEnablingPush(false);
-        return;
-      }
+      if (result !== 'granted') return;
 
       if (!('serviceWorker' in navigator)) {
         setPushStatus('error');
         setPushMessage('Service workers not supported in this browser.');
-        setEnablingPush(false);
-        return;
-      }
-
-      // Register SW if not already registered
-      let registration: ServiceWorkerRegistration | undefined;
-      try {
-        registration = await navigator.serviceWorker.getRegistration('/');
-        if (!registration) {
-          registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        }
-        // Wait for SW to be active
-        await navigator.serviceWorker.ready;
-      } catch (swErr: any) {
-        setPushStatus('error');
-        setPushMessage('Service worker failed to register: ' + swErr.message);
-        setEnablingPush(false);
         return;
       }
 
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidPublicKey) {
         setPushStatus('error');
-        setPushMessage('Push not configured on server. Contact support.');
-        setEnablingPush(false);
+        setPushMessage('Push not configured — VAPID key missing. Check Vercel env vars.');
         return;
       }
 
-      // Subscribe to push
+      // Get or register SW
+      let registration: ServiceWorkerRegistration;
+      try {
+        registration = await navigator.serviceWorker.ready;
+      } catch (swErr: any) {
+        setPushStatus('error');
+        setPushMessage('Service worker error: ' + swErr.message);
+        return;
+      }
+
+      // ── KEY FIX: unsubscribe old subscription first ──────────────────────
+      // Without this, resubscribing with new VAPID keys throws
+      // "The application server key did not match" and loops forever.
+      try {
+        const existingSub = await registration.pushManager.getSubscription();
+        if (existingSub) {
+          await existingSub.unsubscribe();
+          console.log('[Push] Old subscription removed.');
+        }
+      } catch (unsubErr) {
+        console.warn('[Push] Could not unsubscribe old sub:', unsubErr);
+        // Non-fatal — continue anyway
+      }
+
+      // Subscribe fresh with current VAPID key
       let subscription: PushSubscription;
       try {
         subscription = await registration.pushManager.subscribe({
@@ -173,14 +175,13 @@ export default function AccountView({ onBack }: AccountViewProps) {
         });
       } catch (subErr: any) {
         setPushStatus('error');
-        setPushMessage('Push subscribe failed: ' + subErr.message);
-        setEnablingPush(false);
+        setPushMessage('Subscribe failed: ' + subErr.message);
         return;
       }
 
       const subJSON = subscription.toJSON();
 
-      // Save via server API (uses service_role to bypass RLS)
+      // Save via server API (uses service_role — bypasses RLS completely)
       const res = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -196,17 +197,16 @@ export default function AccountView({ onBack }: AccountViewProps) {
         const errData = await res.json().catch(() => ({}));
         setPushStatus('error');
         setPushMessage('Failed to save subscription: ' + (errData.error || res.status));
-        setEnablingPush(false);
         return;
       }
 
       setPushStatus('success');
-      setPushMessage('Device registered! You can now send a test push.');
+      setPushMessage('Device registered! Tap Send Test Push to verify.');
       console.log('[Push] Subscription saved.');
     } catch (error: any) {
       console.error('[Push] Unexpected error:', error);
       setPushStatus('error');
-      setPushMessage('Unexpected error: ' + (error?.message || 'unknown'));
+      setPushMessage('Error: ' + (error?.message || 'unknown'));
     } finally {
       setEnablingPush(false);
     }
