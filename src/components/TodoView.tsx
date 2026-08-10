@@ -54,7 +54,7 @@ export default function TodoView() {
   const completedCount = completedTasks.length;
   const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const streakDays = Math.max(1, completedCount > 0 ? 7 : 5);
+  const streakDays = profile?.streak || 0;
   const todayDayIdx = new Date().getDay();
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -116,7 +116,7 @@ export default function TodoView() {
               <p className="text-4xl font-medium">{streakDays} <span className="text-lg opacity-70">Days</span></p>
             </div>
             <div className="w-full bg-black/10 rounded-full h-1 mt-4">
-              <div className="bg-black h-full rounded-full transition-all duration-500" style={{ width: `${Math.max(15, pct)}%` }} />
+              <div className="bg-black h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
             </div>
           </div>
 
@@ -136,7 +136,12 @@ export default function TodoView() {
         <div className="bg-[#151515] rounded-[32px] p-5 border border-white/5 flex justify-between items-center">
           {WEEKDAYS.map(({ day, key }) => {
             const isToday = key === todayDayIdx;
-            const isPast = key <= todayDayIdx && !isToday && todayDayIdx !== 0;
+            
+            // Map JS getDay() (Sun=0) to Monday-start index (Mon=0...Sun=6)
+            const todayMonIdx = todayDayIdx === 0 ? 6 : todayDayIdx - 1;
+            const cellMonIdx = key === 0 ? 6 : key - 1;
+            const isPast = cellMonIdx < todayMonIdx;
+
             return (
               <div key={day+key} className="flex flex-col items-center gap-1.5">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -144,7 +149,6 @@ export default function TodoView() {
                 }`}>
                   {day}
                 </div>
-                {isToday && <div className="w-1 h-1 rounded-full bg-card-yellow" />}
               </div>
             );
           })}

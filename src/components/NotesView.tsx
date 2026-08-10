@@ -130,7 +130,7 @@ function NoteEditor({
 }) {
   const [title, setTitle] = useState(note?.title ?? '');
   const [content, setContent] = useState(note?.content ?? '');
-  const [color, setColor] = useState(note?.color ?? 'orange');
+  const [color, setColor] = useState(note?.color ?? 'mint');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {

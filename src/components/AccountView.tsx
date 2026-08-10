@@ -303,8 +303,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     onClick={() => setCurrentScreen('ego')}
                     className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5"
                   >
-                    <div className="flex items-center gap-4 text-white">
-                      <Target className="w-5 h-5 opacity-60" />
+                    <div className="flex items-center text-white">
                       <span className="text-lg font-medium">Goal Setup</span>
                     </div>
                     <ChevronRight className="w-5 h-5 text-white/30" />
@@ -315,8 +314,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     onClick={() => setCurrentScreen('notifications')}
                     className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5"
                   >
-                    <div className="flex items-center gap-4 text-white">
-                      <Bell className="w-5 h-5 opacity-60" />
+                    <div className="flex items-center text-white">
                       <span className="text-lg font-medium">Notifications</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -335,8 +333,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     }}
                     className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5"
                   >
-                    <div className="flex items-center gap-4 text-white">
-                      <User className="w-5 h-5 opacity-60" />
+                    <div className="flex items-center text-white">
                       <span className="text-lg font-medium">Change PIN</span>
                     </div>
                     <ChevronRight className="w-5 h-5 text-white/30" />
@@ -344,8 +341,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
                   {/* Dark Mode */}
                   <div className="flex items-center justify-between px-6 py-5">
-                    <div className="flex items-center gap-4 text-white">
-                      <Moon className="w-5 h-5 opacity-60" />
+                    <div className="flex items-center text-white">
                       <span className="text-lg font-medium">Dark Mode</span>
                     </div>
                     <div 
@@ -370,8 +366,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                   onClick={signOut}
                   className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5"
                 >
-                  <div className="flex items-center gap-4 text-white">
-                    <LogOut className="w-5 h-5 opacity-60" />
+                  <div className="flex items-center text-white">
                     <span className="text-lg font-medium text-white/80">Sign Out</span>
                   </div>
                   <ChevronRight className="w-5 h-5 text-white/30" />
@@ -381,8 +376,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                   onClick={() => setCurrentScreen('deactivate')}
                   className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-red-500/10 transition-colors text-red-500"
                 >
-                  <div className="flex items-center gap-4">
-                    <Trash2 className="w-5 h-5 opacity-80" />
+                  <div className="flex items-center">
                     <span className="text-lg font-medium">Reset Account</span>
                   </div>
                   <ChevronRight className="w-5 h-5 opacity-40" />
@@ -546,9 +540,6 @@ export default function AccountView({ onBack }: AccountViewProps) {
               <div className="bg-[#151515] border border-white/5 rounded-[40px] p-6 space-y-5 shadow-sm">
                 <div>
                   <p className="text-sm font-semibold text-white/40 uppercase tracking-widest pl-2">Notifications</p>
-                  <p className="text-sm text-white/60 mt-2 pl-2 leading-relaxed">
-                    Receive daily motivational reminders to keep your goals on track.
-                  </p>
                 </div>
 
                 {/* ── Status & Buttons ── */}
@@ -584,17 +575,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     </button>
                   )}
 
-                  {/* Status message */}
-                  {pushStatus === 'success' && (
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-2xl px-4 py-3 text-green-400 text-xs font-medium text-left">
-                      ✓ {pushMessage}
-                    </div>
-                  )}
-                  {pushStatus === 'error' && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 text-red-400 text-xs font-medium text-left">
-                      ✗ {pushMessage}
-                    </div>
-                  )}
+                  {/* Status message removed per request */}
 
                   {/* Test notification button */}
                   <button

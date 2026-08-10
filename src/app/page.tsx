@@ -40,7 +40,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
     id: 'chat',
     label: 'LEAD AI',
     icon: (
-      <svg width="28" height="28" viewBox="0 0 100 100" fill="currentColor">
+      <svg width="22" height="22" viewBox="0 0 100 100" fill="currentColor">
         <polygon points="50,15 15,35 15,47 50,27 85,47 85,35" />
         <polygon points="50,33 15,53 15,65 50,45 85,65 85,53" />
         <polygon points="50,51 15,71 15,83 50,63 85,83 85,71" />
