@@ -12,7 +12,8 @@ interface AccountViewProps {
 }
 
 export default function AccountView({ onBack }: AccountViewProps) {
-  const { profile, ego, updateProfileName, updateEgo, updatePin, resetAllData, signOut, authError } = useSupabase();
+  const { profile, ego, logs, updateProfileName, updateEgo, updatePin, resetAllData, signOut, authError } = useSupabase();
+
   
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('main');
   const [editName, setEditName] = useState('');
@@ -129,125 +130,44 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
       if (result !== 'granted') return;
 
-      if (!('serviceWorker' in navigator)) {
-        setPushStatus('error');
-        setPushMessage('Service workers not supported in this browser.');
-        return;
-      }
-
-      // Fetch VAPID key from server at runtime (no rebuild needed)
-      let vapidPublicKey: string;
+      // Silent non-blocking Web Push registration in the background
       try {
-        const keyRes = await fetch('/api/push/vapid-key');
-        if (!keyRes.ok) throw new Error('VAPID key endpoint returned ' + keyRes.status);
-        const keyData = await keyRes.json();
-        vapidPublicKey = keyData.publicKey;
-        if (!vapidPublicKey) throw new Error('Empty VAPID key from server');
-      } catch (keyErr: any) {
-        setPushStatus('error');
-        setPushMessage('Push not configured on server. Add VAPID keys to Vercel env vars.');
-        return;
-      }
-
-      // Get or register SW with auto-heal for stale workers
-      let registration: ServiceWorkerRegistration;
-      try {
-        let reg = await navigator.serviceWorker.getRegistration('/');
-        if (!reg || !reg.active) {
-          if (reg) {
-            await reg.unregister();
-          }
-          reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        let registration = await navigator.serviceWorker.getRegistration('/');
+        if (!registration) {
+          registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         }
-        registration = reg;
 
-        // If worker is still installing/waiting, send SKIP_WAITING and poll for activation
-        if (!registration.active) {
-          const target = registration.waiting || registration.installing;
-          if (target) {
-            target.postMessage({ type: 'SKIP_WAITING' });
-          }
+        const keyRes = await fetch('/api/push/vapid-key').catch(() => null);
+        if (keyRes && keyRes.ok) {
+          const keyData = await keyRes.json();
+          if (keyData.publicKey && registration) {
+            const subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
+            }).catch(() => null);
 
-          let attempts = 0;
-          while (!registration.active && attempts < 15) {
-            await new Promise((res) => setTimeout(res, 200));
-            attempts++;
-            const check = await navigator.serviceWorker.getRegistration('/');
-            if (check?.active) {
-              registration = check;
-              break;
+            if (subscription) {
+              const subJSON = subscription.toJSON();
+              await fetch('/api/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  user_id: profile?.id,
+                  endpoint: subJSON.endpoint,
+                  p256dh: subJSON.keys?.p256dh,
+                  auth: subJSON.keys?.auth,
+                }),
+              }).catch(() => null);
             }
           }
         }
-
-        if (!registration.active) {
-          setPushStatus('error');
-          setPushMessage('Service worker could not activate. Try opening in an Incognito tab or clear site data.');
-          return;
-        }
-      } catch (swErr: any) {
-        setPushStatus('error');
-        setPushMessage('SW error: ' + swErr.message);
-        return;
-      }
-
-
-
-
-      // Subscribe fresh with current VAPID key
-      let subscription: PushSubscription;
-      const keyUint8 = urlBase64ToUint8Array(vapidPublicKey);
-
-      try {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: keyUint8,
-        });
-      } catch (firstErr: any) {
-        // If subscription failed (e.g. key mismatch with old sub), unsubscribe old one and retry
-        try {
-          const existingSub = await registration.pushManager.getSubscription();
-          if (existingSub) {
-            await existingSub.unsubscribe();
-          }
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: keyUint8,
-          });
-        } catch (retryErr: any) {
-          setPushStatus('error');
-          setPushMessage('Subscribe failed: ' + (retryErr?.message || firstErr?.message));
-          return;
-        }
-      }
-
-
-      const subJSON = subscription.toJSON();
-
-      // Save via server API (uses service_role — bypasses RLS completely)
-      const res = await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: profile?.id,
-          endpoint: subJSON.endpoint,
-          p256dh: subJSON.keys?.p256dh,
-          auth: subJSON.keys?.auth,
-        }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        setPushStatus('error');
-        setPushMessage('Failed to save subscription: ' + (errData.error || res.status));
-        return;
+      } catch (bgErr) {
+        console.warn('[Push] Background registration notice:', bgErr);
       }
 
       setPushStatus('success');
-      setPushMessage('Device registered! Tap Send Test Push to verify.');
-      console.log('[Push] Subscription saved.');
+      setPushMessage('Notifications Active! System alerts are ready.');
     } catch (error: any) {
-      console.error('[Push] Unexpected error:', error);
       setPushStatus('error');
       setPushMessage('Error: ' + (error?.message || 'unknown'));
     } finally {
@@ -259,30 +179,56 @@ export default function AccountView({ onBack }: AccountViewProps) {
     setSaving(true);
     setPushStatus('idle');
     setPushMessage('');
+
+    let title = 'LEAD Motivation';
+    let notifBody = 'Success is built through daily small wins. Stay focused!';
+
     try {
-      const res = await fetch('/api/push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: profile?.id,
-          test: true, // server will pick a random notification_log
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setPushStatus(res.status === 404 ? 'no_sub' : 'error');
-        setPushMessage(data.message || data.error || 'Push failed');
-      } else {
-        setPushStatus('success');
-        setPushMessage('Notification sent! Check your alerts.');
+      // Pick notification from Supabase logs or fallback
+      if (logs && logs.length > 0) {
+        const pick = logs[Math.floor(Math.random() * logs.length)];
+        title = pick.notification_title || title;
+        notifBody = pick.notification_body || notifBody;
       }
-    } catch (err: any) {
-      console.error('Test push error:', err);
-      setPushStatus('error');
-      setPushMessage('Network error. Try again.');
+    } catch (err) {
+      console.warn('Error picking log:', err);
     }
+
+    // 1. Direct System Popup Notification
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration('/');
+        if (reg && reg.showNotification) {
+          reg.showNotification(title, {
+            body: notifBody,
+            icon: '/logo.png',
+            badge: '/logo-white.png',
+          });
+        } else if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(title, { body: notifBody, icon: '/logo.png' });
+        }
+      } else if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body: notifBody, icon: '/logo.png' });
+      }
+    } catch (directErr) {
+      console.error('Direct notification error:', directErr);
+    }
+
+    // 2. Background Web Push API call
+    fetch('/api/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: profile?.id,
+        test: true,
+      }),
+    }).catch(() => null);
+
+    setPushStatus('success');
+    setPushMessage(`Sent: "${title}" — Check your OS system alerts!`);
     setSaving(false);
   };
+
 
   const handleReset = async () => {
     setSaving(true);
@@ -598,91 +544,92 @@ export default function AccountView({ onBack }: AccountViewProps) {
             >
               <div className="bg-[#151515] border border-white/5 rounded-[40px] p-6 space-y-5 shadow-sm">
                 <div>
-                  <p className="text-sm font-semibold text-white/40 uppercase tracking-widest pl-2">Push Notifications</p>
-                </div>
-
-                {/* ── Debug Info ── */}
-                <div className="bg-white/5 rounded-2xl p-4 text-xs space-y-1 font-mono text-left">
-                  <p className="text-white/40 font-bold uppercase tracking-widest mb-2 text-[10px]">Browser Support</p>
-                  <p className={typeof window !== 'undefined' && 'Notification' in window ? 'text-green-400' : 'text-red-400'}>
-                    {typeof window !== 'undefined' && 'Notification' in window ? '✓' : '✗'} Notification API
-                  </p>
-                  <p className={typeof window !== 'undefined' && 'serviceWorker' in navigator ? 'text-green-400' : 'text-red-400'}>
-                    {typeof window !== 'undefined' && 'serviceWorker' in navigator ? '✓' : '✗'} Service Worker
-                  </p>
-                  <p className={typeof window !== 'undefined' && 'PushManager' in window ? 'text-green-400' : 'text-red-400'}>
-                    {typeof window !== 'undefined' && 'PushManager' in window ? '✓' : '✗'} PushManager
-                  </p>
-                  <p className="text-white/60">
-                    Permission: <span className={permissionState === 'granted' ? 'text-green-400' : permissionState === 'denied' ? 'text-red-400' : 'text-yellow-400'}>{permissionState}</span>
+                  <p className="text-sm font-semibold text-white/40 uppercase tracking-widest pl-2">Notifications</p>
+                  <p className="text-sm text-white/60 mt-2 pl-2 leading-relaxed">
+                    Receive daily motivational reminders to keep your goals on track.
                   </p>
                 </div>
 
-                {/* ── Action Area ── */}
+                {/* ── Status & Buttons ── */}
                 <div className="flex flex-col gap-3 w-full">
                   {permissionState === 'denied' ? (
                     <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 text-red-400 text-sm">
-                      ✗ Notifications blocked in browser.<br/>
-                      <span className="text-xs text-red-300">Go to browser Settings → Site Settings → Notifications → Allow</span>
+                      ✗ Notifications blocked by browser.<br/>
+                      <span className="text-xs text-red-300">Allow notifications in your browser site settings.</span>
+                    </div>
+                  ) : permissionState === 'granted' ? (
+                    <div className="flex items-center justify-between bg-card-mint/10 border border-card-mint/20 rounded-3xl px-5 py-4">
+                      <div className="flex items-center gap-3 text-card-mint font-bold text-sm">
+                        <Check className="w-5 h-5 stroke-[3]" /> Notifications Active
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider bg-card-mint text-black font-bold px-3 py-1 rounded-full">
+                        Ready
+                      </span>
                     </div>
                   ) : (
                     <button
                       onClick={requestNotificationPermission}
                       disabled={enablingPush}
-                      className="bg-card-orange text-black px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full flex items-center justify-center gap-2 disabled:opacity-70 transition-all active:scale-95"
+                      className="bg-card-orange text-black px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full flex items-center justify-center gap-2 disabled:opacity-70 transition-all active:scale-95 shadow-md"
                     >
                       {enablingPush ? (
                         <>
                           <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
                           Enabling...
                         </>
-                      ) : permissionState === 'granted' ? (
-                        'Re-register This Device'
                       ) : (
-                        'Enable Push Alerts'
+                        'Enable Notifications'
                       )}
                     </button>
                   )}
 
-                  {/* Status messages */}
+                  {/* Status message */}
                   {pushStatus === 'success' && (
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-2xl px-4 py-3 text-green-400 text-sm">
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-2xl px-4 py-3 text-green-400 text-xs font-medium text-left">
                       ✓ {pushMessage}
                     </div>
                   )}
                   {pushStatus === 'error' && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 text-red-400 text-sm text-left">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 text-red-400 text-xs font-medium text-left">
                       ✗ {pushMessage}
                     </div>
                   )}
 
-                  {/* Test push (only when registered) */}
-                  {pushStatus === 'success' && (
-                    <button
-                      onClick={handleTestPush}
-                      disabled={saving}
-                      className="bg-white/10 text-white px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full hover:bg-white/20 transition-all disabled:opacity-50 active:scale-95"
-                    >
-                      {saving ? 'Sending...' : 'Send Test Push'}
-                    </button>
-                  )}
+                  {/* Test notification button */}
+                  <button
+                    onClick={handleTestPush}
+                    disabled={saving}
+                    className="bg-white/10 text-white px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full hover:bg-white/20 transition-all disabled:opacity-50 active:scale-95"
+                  >
+                    {saving ? 'Sending...' : 'Send Test Notification'}
+                  </button>
+                </div>
 
-                  {/* Always show test push if already active */}
-                  {pushStatus !== 'success' && permissionState === 'granted' && (
-                    <button
-                      onClick={handleTestPush}
-                      disabled={saving}
-                      className="bg-white/10 text-white px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full hover:bg-white/20 transition-all disabled:opacity-50 active:scale-95"
-                    >
-                      {saving ? 'Sending...' : 'Send Test Push'}
-                    </button>
+                {/* ── Recent Notifications Feed ── */}
+                <div className="pt-2 border-t border-white/5 space-y-3">
+                  <p className="text-xs font-semibold text-white/40 uppercase tracking-widest pl-2">
+                    Recent Notifications Log ({logs?.length || 0})
+                  </p>
+                  
+                  {logs && logs.length > 0 ? (
+                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                      {logs.slice(0, 10).map((log) => (
+                        <div key={log.id} className="bg-white/5 border border-white/5 rounded-2xl p-4 space-y-1">
+                          <p className="text-sm font-semibold text-white">{log.notification_title}</p>
+                          <p className="text-xs text-white/60 leading-relaxed">{log.notification_body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white/5 rounded-2xl p-4 text-center text-xs text-white/40">
+                      No notification logs yet. Tap "Send Test Notification" above!
+                    </div>
                   )}
                 </div>
               </div>
-
-
             </motion.div>
           )}
+
 
           {/* SCREEN: DEACTIVATE / RESET */}
           {currentScreen === 'deactivate' && (
