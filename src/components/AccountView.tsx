@@ -149,7 +149,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
         return;
       }
 
-      // Get or register SW instantly (no hanging on navigator.serviceWorker.ready)
+      // Get or register SW
       let registration: ServiceWorkerRegistration;
       try {
         let reg = await navigator.serviceWorker.getRegistration('/');
@@ -157,11 +157,32 @@ export default function AccountView({ onBack }: AccountViewProps) {
           reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         }
         registration = reg;
+
+        // Ensure worker is active before subscribing (fixes "no active Service Worker" error)
+        if (!registration.active) {
+          const sw = registration.installing || registration.waiting;
+          if (sw) {
+            await new Promise<void>((resolve) => {
+              if (sw.state === 'activated') { resolve(); return; }
+              sw.addEventListener('statechange', () => {
+                if (sw.state === 'activated' || sw.state === 'redundant') resolve();
+              });
+              setTimeout(resolve, 3000);
+            });
+          } else {
+            // Fallback to ready promise with 3s timeout
+            await Promise.race([
+              navigator.serviceWorker.ready,
+              new Promise((res) => setTimeout(res, 3000)),
+            ]);
+          }
+        }
       } catch (swErr: any) {
         setPushStatus('error');
         setPushMessage('SW error: ' + swErr.message);
         return;
       }
+
 
       // Subscribe fresh with current VAPID key
       let subscription: PushSubscription;
