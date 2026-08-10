@@ -6,6 +6,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 // Add the same LEAD system prompt
 const LEAD_SYSTEM_PROMPT = `You are LEAD — the AI core of LEAD, a personal accountability engine built by Solvecrew.
