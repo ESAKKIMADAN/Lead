@@ -135,10 +135,17 @@ export default function AccountView({ onBack }: AccountViewProps) {
         return;
       }
 
-      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapidPublicKey) {
+      // Fetch VAPID key from server at runtime (no rebuild needed)
+      let vapidPublicKey: string;
+      try {
+        const keyRes = await fetch('/api/push/vapid-key');
+        if (!keyRes.ok) throw new Error('VAPID key endpoint returned ' + keyRes.status);
+        const keyData = await keyRes.json();
+        vapidPublicKey = keyData.publicKey;
+        if (!vapidPublicKey) throw new Error('Empty VAPID key from server');
+      } catch (keyErr: any) {
         setPushStatus('error');
-        setPushMessage('Push not configured — VAPID key missing. Check Vercel env vars.');
+        setPushMessage('Push not configured on server. Add VAPID keys to Vercel env vars.');
         return;
       }
 
