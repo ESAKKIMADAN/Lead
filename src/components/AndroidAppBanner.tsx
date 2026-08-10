@@ -19,7 +19,7 @@ export default function AndroidAppBanner() {
       e.preventDefault();
       setDeferredPrompt(e);
       const dismissed = localStorage.getItem('hide_app_install_banner');
-      if (!dismissed) {
+      if (!dismissed && isAndroidDevice) {
         setShowBanner(true);
       }
     };
@@ -27,12 +27,8 @@ export default function AndroidAppBanner() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     const dismissed = localStorage.getItem('hide_app_install_banner');
-    if (!dismissed) {
-      // Show for Android devices or mobile screen sizes
-      const isMobile = window.innerWidth <= 768 || isAndroidDevice;
-      if (isMobile) {
-        setShowBanner(true);
-      }
+    if (!dismissed && isAndroidDevice) {
+      setShowBanner(true);
     }
 
     return () => {
