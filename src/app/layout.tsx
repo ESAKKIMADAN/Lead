@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { SupabaseProvider } from "@/lib/SupabaseContext";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import AndroidAppBanner from "@/components/AndroidAppBanner";
+
 
 export const metadata: Metadata = {
   title: "Lead by SolveCrew",
@@ -54,9 +56,11 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-background text-foreground">
         <SupabaseProvider>
           <ServiceWorkerRegistrar />
+          <AndroidAppBanner />
           {children}
         </SupabaseProvider>
       </body>
+
     </html>
   );
 }

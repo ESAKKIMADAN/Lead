@@ -1,0 +1,92 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Download, X, Smartphone } from 'lucide-react';
+
+export default function AndroidAppBanner() {
+  const [showBanner, setShowBanner] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const ua = navigator.userAgent || '';
+    const isAndroidDevice = /Android/i.test(ua);
+    setIsAndroid(isAndroidDevice);
+
+    const dismissed = localStorage.getItem('hide_android_apk_banner');
+    if (!dismissed) {
+      // Show for Android devices or mobile screen sizes
+      const isMobile = window.innerWidth <= 768 || isAndroidDevice;
+      if (isMobile) {
+        setShowBanner(true);
+      }
+    }
+  }, []);
+
+  const handleDismiss = () => {
+    setShowBanner(false);
+    localStorage.setItem('hide_android_apk_banner', 'true');
+  };
+
+  const handleDownload = () => {
+    // Download APK from public folder
+    const link = document.createElement('a');
+    link.href = '/lead-app.apk';
+    link.download = 'lead-app.apk';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (!showBanner) return null;
+
+  return (
+    <div className="fixed bottom-4 left-4 right-4 z-50 max-w-md mx-auto bg-[#1A1A1A] border border-white/10 text-white rounded-3xl p-4 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom duration-300">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-card-orange/10 border border-card-orange/20 flex items-center justify-center text-card-orange shrink-0">
+            <Smartphone className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="font-bold text-sm text-white leading-tight">LEAD for Android</h4>
+              {isAndroid && (
+                <span className="text-[9px] uppercase font-bold tracking-widest bg-card-mint/20 text-card-mint px-2 py-0.5 rounded-full">
+                  Android Detected
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-white/60 mt-0.5">
+              Get native background notifications & goal tracking.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={handleDismiss}
+          className="text-white/40 hover:text-white p-1 rounded-full hover:bg-white/5 transition-colors"
+          aria-label="Dismiss banner"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-white/5 flex gap-2">
+        <button
+          onClick={handleDownload}
+          className="flex-1 bg-card-orange text-black py-2.5 px-4 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:brightness-95 active:scale-95 transition-all shadow-md"
+        >
+          <Download className="w-4 h-4" />
+          Download Android APK
+        </button>
+        <button
+          onClick={handleDismiss}
+          className="bg-white/5 text-white/70 py-2.5 px-3 rounded-2xl font-semibold text-xs hover:bg-white/10 transition-all"
+        >
+          Later
+        </button>
+      </div>
+    </div>
+  );
+}

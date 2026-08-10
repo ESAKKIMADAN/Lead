@@ -3,7 +3,8 @@
 import { useSupabase } from '@/lib/SupabaseContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { ChevronRight, LogOut, Trash2, User, Bell, Moon, Target, ChevronLeft, Check } from 'lucide-react';
+import { ChevronRight, LogOut, Trash2, User, Bell, Moon, Target, ChevronLeft, Check, Download, Smartphone } from 'lucide-react';
+
 
 type ScreenState = 'main' | 'profile' | 'ego' | 'notifications' | 'pin' | 'about' | 'faq' | 'deactivate';
 
@@ -603,7 +604,18 @@ export default function AccountView({ onBack }: AccountViewProps) {
                   >
                     {saving ? 'Sending...' : 'Send Test Notification'}
                   </button>
+
+                  {/* Download APK Button */}
+                  <a
+                    href="/lead-app.apk"
+                    download="lead-app.apk"
+                    className="bg-card-orange/10 border border-card-orange/20 text-card-orange px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full flex items-center justify-center gap-2 hover:bg-card-orange/20 transition-all active:scale-95"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Android App (.APK)
+                  </a>
                 </div>
+
 
                 {/* ── Recent Notifications Feed ── */}
                 <div className="pt-2 border-t border-white/5 space-y-3">
