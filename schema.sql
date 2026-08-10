@@ -308,3 +308,28 @@ AS $$
   WHERE raw_user_meta_data->>'display_name' = p_username 
   LIMIT 1;
 $$;
+
+-- ----------------------------------------------------
+-- MIGRATION: Add scheduled_at and pushed to notification_logs
+-- Run these in Supabase SQL Editor if the table already exists.
+-- ----------------------------------------------------
+
+-- scheduled_at: when the notification should be fired (ISO timestamp)
+ALTER TABLE public.notification_logs
+  ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMP WITH TIME ZONE;
+
+-- pushed: whether the cron job has already sent this via web push
+ALTER TABLE public.notification_logs
+  ADD COLUMN IF NOT EXISTS pushed BOOLEAN DEFAULT FALSE NOT NULL;
+
+-- Index for the cron query: find pending (not pushed) notifications due now
+CREATE INDEX IF NOT EXISTS idx_notification_logs_cron
+  ON public.notification_logs (pushed, scheduled_at)
+  WHERE pushed = FALSE;
+
+-- Service role policy so the cron can update pushed=true
+CREATE POLICY IF NOT EXISTS "Service role can update notification logs"
+  ON public.notification_logs
+  FOR UPDATE
+  USING (true)
+  WITH CHECK (true);
