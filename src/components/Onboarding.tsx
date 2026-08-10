@@ -53,18 +53,9 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
         className="w-full max-w-[400px] bg-neutral-900/50 backdrop-blur-xl border border-neutral-800/80 rounded-[2.5rem] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.9)] space-y-6 relative z-10"
       >
         <div className="flex flex-col items-center text-center space-y-2">
-          {/* App Stack Logo */}
-          <div className="w-10 h-10 flex items-center justify-center text-neutral-300 mb-2">
-            <svg 
-              width="28" 
-              height="28" 
-              viewBox="0 0 100 100" 
-              fill="currentColor"
-            >
-              <polygon points="50,15 15,35 15,47 50,27 85,47 85,35" />
-              <polygon points="50,33 15,53 15,65 50,45 85,65 85,53" />
-              <polygon points="50,51 15,71 15,83 50,63 85,83 85,71" />
-            </svg>
+          {/* App Logo */}
+          <div className="w-12 h-12 flex items-center justify-center mb-2">
+            <img src="/logo-white.png" alt="LEAD" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-100">Welcome</h1>
           <p className="text-xs text-neutral-500">Please enter your details to get started.</p>

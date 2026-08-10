@@ -40,7 +40,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
     id: 'chat',
     label: 'LEAD AI',
     icon: (
-      <svg width="22" height="22" viewBox="0 0 100 100" fill="currentColor">
+      <svg width="28" height="28" viewBox="0 0 100 100" fill="currentColor">
         <polygon points="50,15 15,35 15,47 50,27 85,47 85,35" />
         <polygon points="50,33 15,53 15,65 50,45 85,65 85,53" />
         <polygon points="50,51 15,71 15,83 50,63 85,83 85,71" />
@@ -151,7 +151,7 @@ export default function Home() {
                 {isActive && (
                   <motion.div
                     layoutId="nav-active-pill"
-                    className={`absolute inset-0 rounded-full ${isCenter ? 'bg-card-orange shadow-[0_0_20px_rgba(253,186,116,0.2)]' : 'bg-white/15'}`}
+                    className={`absolute inset-0 rounded-full ${isCenter ? 'bg-card-purple shadow-[0_0_20px_rgba(167,139,250,0.2)]' : 'bg-white/15'}`}
                     transition={{ type: 'spring', damping: 25, stiffness: 350 }}
                   />
                 )}
