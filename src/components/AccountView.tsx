@@ -149,60 +149,47 @@ export default function AccountView({ onBack }: AccountViewProps) {
         return;
       }
 
-      // Get or register SW with timeout (ready can hang if SW is stuck updating)
+      // Get or register SW instantly (no hanging on navigator.serviceWorker.ready)
       let registration: ServiceWorkerRegistration;
       try {
-        // Register if needed
-        const existing = await navigator.serviceWorker.getRegistration('/');
-        if (!existing) {
-          await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        let reg = await navigator.serviceWorker.getRegistration('/');
+        if (!reg) {
+          reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         }
-
-        // Force any waiting SW to activate immediately
-        const reg = await navigator.serviceWorker.getRegistration('/');
-        if (reg?.waiting) {
-          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-
-        // Wait for ready with 8s timeout
-        registration = await Promise.race([
-          navigator.serviceWorker.ready,
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Service worker timed out. Try refreshing the page and retry.')), 8000)
-          ),
-        ]);
+        registration = reg;
       } catch (swErr: any) {
         setPushStatus('error');
         setPushMessage('SW error: ' + swErr.message);
         return;
       }
 
-      // ── KEY FIX: unsubscribe old subscription first ──────────────────────
-      // Without this, resubscribing with new VAPID keys throws
-      // "The application server key did not match" and loops forever.
-      try {
-        const existingSub = await registration.pushManager.getSubscription();
-        if (existingSub) {
-          await existingSub.unsubscribe();
-          console.log('[Push] Old subscription removed.');
-        }
-      } catch (unsubErr) {
-        console.warn('[Push] Could not unsubscribe old sub:', unsubErr);
-        // Non-fatal — continue anyway
-      }
-
       // Subscribe fresh with current VAPID key
       let subscription: PushSubscription;
+      const keyUint8 = urlBase64ToUint8Array(vapidPublicKey);
+
       try {
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+          applicationServerKey: keyUint8,
         });
-      } catch (subErr: any) {
-        setPushStatus('error');
-        setPushMessage('Subscribe failed: ' + subErr.message);
-        return;
+      } catch (firstErr: any) {
+        // If subscription failed (e.g. key mismatch with old sub), unsubscribe old one and retry
+        try {
+          const existingSub = await registration.pushManager.getSubscription();
+          if (existingSub) {
+            await existingSub.unsubscribe();
+          }
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: keyUint8,
+          });
+        } catch (retryErr: any) {
+          setPushStatus('error');
+          setPushMessage('Subscribe failed: ' + (retryErr?.message || firstErr?.message));
+          return;
+        }
       }
+
 
       const subJSON = subscription.toJSON();
 
