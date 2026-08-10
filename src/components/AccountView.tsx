@@ -605,39 +605,10 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     {saving ? 'Sending...' : 'Send Test Notification'}
                   </button>
 
-                  {/* Download APK Button */}
-                  <a
-                    href="/lead-app.apk"
-                    download="lead-app.apk"
-                    className="bg-card-orange/10 border border-card-orange/20 text-card-orange px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full flex items-center justify-center gap-2 hover:bg-card-orange/20 transition-all active:scale-95"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download Android App (.APK)
-                  </a>
                 </div>
 
 
-                {/* ── Recent Notifications Feed ── */}
-                <div className="pt-2 border-t border-white/5 space-y-3">
-                  <p className="text-xs font-semibold text-white/40 uppercase tracking-widest pl-2">
-                    Recent Notifications Log ({logs?.length || 0})
-                  </p>
-                  
-                  {logs && logs.length > 0 ? (
-                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                      {logs.slice(0, 10).map((log) => (
-                        <div key={log.id} className="bg-white/5 border border-white/5 rounded-2xl p-4 space-y-1">
-                          <p className="text-sm font-semibold text-white">{log.notification_title}</p>
-                          <p className="text-xs text-white/60 leading-relaxed">{log.notification_body}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-white/5 rounded-2xl p-4 text-center text-xs text-white/40">
-                      No notification logs yet. Tap "Send Test Notification" above!
-                    </div>
-                  )}
-                </div>
+
               </div>
             </motion.div>
           )}
