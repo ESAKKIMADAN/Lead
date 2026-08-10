@@ -560,89 +560,91 @@ export default function AccountView({ onBack }: AccountViewProps) {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <div className="bg-[#151515] border border-white/5 rounded-[40px] p-6 space-y-6 shadow-sm">
+              <div className="bg-[#151515] border border-white/5 rounded-[40px] p-6 space-y-5 shadow-sm">
                 <div>
                   <p className="text-sm font-semibold text-white/40 uppercase tracking-widest pl-2">Push Notifications</p>
-                  <p className="text-sm text-white/60 mt-3 pl-2 leading-relaxed">
-                    Reminders are sent daily at 8:00 AM, 12:00 PM, and 6:00 PM to keep your goals aligned.
+                </div>
+
+                {/* ── Debug Info ── */}
+                <div className="bg-white/5 rounded-2xl p-4 text-xs space-y-1 font-mono text-left">
+                  <p className="text-white/40 font-bold uppercase tracking-widest mb-2 text-[10px]">Browser Support</p>
+                  <p className={typeof window !== 'undefined' && 'Notification' in window ? 'text-green-400' : 'text-red-400'}>
+                    {typeof window !== 'undefined' && 'Notification' in window ? '✓' : '✗'} Notification API
+                  </p>
+                  <p className={typeof window !== 'undefined' && 'serviceWorker' in navigator ? 'text-green-400' : 'text-red-400'}>
+                    {typeof window !== 'undefined' && 'serviceWorker' in navigator ? '✓' : '✗'} Service Worker
+                  </p>
+                  <p className={typeof window !== 'undefined' && 'PushManager' in window ? 'text-green-400' : 'text-red-400'}>
+                    {typeof window !== 'undefined' && 'PushManager' in window ? '✓' : '✗'} PushManager
+                  </p>
+                  <p className="text-white/60">
+                    Permission: <span className={permissionState === 'granted' ? 'text-green-400' : permissionState === 'denied' ? 'text-red-400' : 'text-yellow-400'}>{permissionState}</span>
                   </p>
                 </div>
 
-                <div className="bg-white/5 rounded-3xl p-5 flex flex-col items-center text-center gap-4">
-                  {permissionState !== 'granted' && permissionState !== 'unsupported' ? (
-                    <div className="flex flex-col gap-3 w-full">
-                      <button
-                        onClick={requestNotificationPermission}
-                        disabled={enablingPush}
-                        className="bg-card-orange text-black px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full flex items-center justify-center gap-2 disabled:opacity-70 transition-all"
-                      >
-                        {enablingPush ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                            Enabling...
-                          </>
-                        ) : (
-                          'Enable Push Alerts'
-                        )}
-                      </button>
-                      {/* Show error if enabling failed */}
-                      {pushStatus === 'error' && (
-                        <div className="w-full bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 text-red-400 text-sm font-medium text-left">
-                          ✗ {pushMessage}
-                        </div>
-                      )}
-                    </div>
-                  ) : permissionState === 'granted' ? (
-                    <div className="flex flex-col items-center gap-4 w-full">
-                      <div className="flex items-center gap-2 text-black bg-card-mint px-5 py-3 rounded-full font-bold text-sm">
-                        <Check className="w-4 h-4 stroke-[3]" /> Active on this device
-                      </div>
-                      <button
-                        onClick={handleTestPush}
-                        disabled={saving}
-                        className="bg-white/10 text-white px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full hover:bg-white/20 transition-all disabled:opacity-50"
-                      >
-                        {saving ? 'Sending...' : 'Send Test Push'}
-                      </button>
-
-                      {/* Status feedback */}
-                      {pushStatus === 'success' && (
-                        <div className="w-full bg-green-500/10 border border-green-500/20 rounded-2xl px-4 py-3 text-green-400 text-sm font-medium">
-                          ✓ {pushMessage}
-                        </div>
-                      )}
-                      {pushStatus === 'error' && (
-                        <div className="w-full bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 text-red-400 text-sm font-medium">
-                          ✗ {pushMessage}
-                        </div>
-                      )}
-                      {pushStatus === 'no_sub' && (
-                        <div className="w-full bg-yellow-500/10 border border-yellow-500/20 rounded-2xl px-4 py-3 text-yellow-400 text-sm font-medium space-y-2">
-                          <p>⚠ No subscription found on server.</p>
-                          <button
-                            onClick={requestNotificationPermission}
-                            className="text-yellow-300 underline text-xs"
-                          >
-                            Re-register this device
-                          </button>
-                        </div>
-                      )}
+                {/* ── Action Area ── */}
+                <div className="flex flex-col gap-3 w-full">
+                  {permissionState === 'denied' ? (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 text-red-400 text-sm">
+                      ✗ Notifications blocked in browser.<br/>
+                      <span className="text-xs text-red-300">Go to browser Settings → Site Settings → Notifications → Allow</span>
                     </div>
                   ) : (
-                    <p className="text-sm text-white/40">
-                      Notifications are not supported by this browser.
-                    </p>
+                    <button
+                      onClick={requestNotificationPermission}
+                      disabled={enablingPush}
+                      className="bg-card-orange text-black px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full flex items-center justify-center gap-2 disabled:opacity-70 transition-all active:scale-95"
+                    >
+                      {enablingPush ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                          Enabling...
+                        </>
+                      ) : permissionState === 'granted' ? (
+                        'Re-register This Device'
+                      ) : (
+                        'Enable Push Alerts'
+                      )}
+                    </button>
+                  )}
+
+                  {/* Status messages */}
+                  {pushStatus === 'success' && (
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-2xl px-4 py-3 text-green-400 text-sm">
+                      ✓ {pushMessage}
+                    </div>
+                  )}
+                  {pushStatus === 'error' && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 text-red-400 text-sm text-left">
+                      ✗ {pushMessage}
+                    </div>
+                  )}
+
+                  {/* Test push (only when registered) */}
+                  {pushStatus === 'success' && (
+                    <button
+                      onClick={handleTestPush}
+                      disabled={saving}
+                      className="bg-white/10 text-white px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full hover:bg-white/20 transition-all disabled:opacity-50 active:scale-95"
+                    >
+                      {saving ? 'Sending...' : 'Send Test Push'}
+                    </button>
+                  )}
+
+                  {/* Always show test push if already active */}
+                  {pushStatus !== 'success' && permissionState === 'granted' && (
+                    <button
+                      onClick={handleTestPush}
+                      disabled={saving}
+                      className="bg-white/10 text-white px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full hover:bg-white/20 transition-all disabled:opacity-50 active:scale-95"
+                    >
+                      {saving ? 'Sending...' : 'Send Test Push'}
+                    </button>
                   )}
                 </div>
-
-
-                <button 
-                  onClick={() => setCurrentScreen('main')} 
-                  className="w-full bg-white/10 text-white py-4 rounded-3xl font-semibold text-lg hover:bg-white/20 transition-all"
-                >
-                  Go Back
-                </button>
               </div>
+
+
             </motion.div>
           )}
 
