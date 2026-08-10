@@ -21,7 +21,9 @@ export default function AccountView({ onBack }: AccountViewProps) {
   const [editReason, setEditReason] = useState('');
   const [newPin, setNewPin] = useState('');
   const [saving, setSaving] = useState(false);
-  
+  const [pushStatus, setPushStatus] = useState<'idle' | 'success' | 'error' | 'no_sub'>('idle');
+  const [pushMessage, setPushMessage] = useState('');
+
   const hasNotificationSupport = typeof window !== 'undefined' && 'Notification' in window;
   const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>(
     hasNotificationSupport ? Notification.permission : 'unsupported'
@@ -105,69 +107,88 @@ export default function AccountView({ onBack }: AccountViewProps) {
   };
 
   const requestNotificationPermission = async () => {
-    if (hasNotificationSupport) {
-      const result = await Notification.requestPermission();
-      setPermissionState(result);
+    if (!hasNotificationSupport) return;
+    setPushStatus('idle');
+    setPushMessage('');
 
-      if (result === 'granted' && 'serviceWorker' in navigator) {
-        try {
-          const registration = await navigator.serviceWorker.ready;
-          const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-          
-          if (!vapidPublicKey) {
-            console.error('VAPID public key not found');
-            return;
-          }
+    const result = await Notification.requestPermission();
+    setPermissionState(result);
 
-          const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-          });
+    if (result !== 'granted') return;
+    if (!('serviceWorker' in navigator)) return;
 
-          // Save subscription to Supabase
-          const subJSON = subscription.toJSON();
-          
-          const { data: existing } = await supabase
-            .from('push_subscriptions')
-            .select('id')
-            .eq('endpoint', subJSON.endpoint)
-            .single();
-
-          if (!existing) {
-            await supabase.from('push_subscriptions').insert({
-              user_id: profile?.id,
-              endpoint: subJSON.endpoint,
-              p256dh: subJSON.keys?.p256dh,
-              auth: subJSON.keys?.auth,
-            });
-          }
-          
-          console.log('Push subscription saved successfully.');
-        } catch (error) {
-          console.error('Error subscribing to push notifications:', error);
-        }
+    try {
+      // Ensure SW is registered
+      let registration = await navigator.serviceWorker.getRegistration('/');
+      if (!registration) {
+        registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        // Wait for it to become active
+        await new Promise<void>((resolve) => {
+          if (registration!.active) { resolve(); return; }
+          const sw = registration!.installing || registration!.waiting;
+          if (sw) sw.addEventListener('statechange', () => { if (sw.state === 'activated') resolve(); });
+          else resolve();
+        });
       }
+      await navigator.serviceWorker.ready;
+
+      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidPublicKey) {
+        console.error('VAPID public key not set in env');
+        return;
+      }
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      });
+
+      const subJSON = subscription.toJSON();
+
+      // Upsert — handles both first-time and renewed subscriptions
+      await supabase.from('push_subscriptions').upsert(
+        {
+          user_id: profile?.id,
+          endpoint: subJSON.endpoint,
+          p256dh: subJSON.keys?.p256dh,
+          auth: subJSON.keys?.auth,
+        },
+        { onConflict: 'user_id,endpoint' }
+      );
+
+      console.log('[Push] Subscription saved.');
+    } catch (error: any) {
+      console.error('[Push] Subscribe error:', error);
+      setPushStatus('error');
+      setPushMessage('Could not subscribe: ' + (error?.message || 'unknown error'));
     }
   };
 
   const handleTestPush = async () => {
     setSaving(true);
+    setPushStatus('idle');
+    setPushMessage('');
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      await fetch('/api/push', {
+      const res = await fetch('/api/push', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: 'Test Notification',
-          body: 'This is a test web push notification from Lead App!',
           user_id: profile?.id,
+          test: true, // server will pick a random notification_log
         }),
       });
-    } catch (err) {
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setPushStatus(res.status === 404 ? 'no_sub' : 'error');
+        setPushMessage(data.message || data.error || 'Push failed');
+      } else {
+        setPushStatus('success');
+        setPushMessage('Notification sent! Check your alerts.');
+      }
+    } catch (err: any) {
       console.error('Test push error:', err);
+      setPushStatus('error');
+      setPushMessage('Network error. Try again.');
     }
     setSaving(false);
   };
@@ -512,6 +533,29 @@ export default function AccountView({ onBack }: AccountViewProps) {
                       >
                         {saving ? 'Sending...' : 'Send Test Push'}
                       </button>
+
+                      {/* Status feedback */}
+                      {pushStatus === 'success' && (
+                        <div className="w-full bg-green-500/10 border border-green-500/20 rounded-2xl px-4 py-3 text-green-400 text-sm font-medium">
+                          ✓ {pushMessage}
+                        </div>
+                      )}
+                      {pushStatus === 'error' && (
+                        <div className="w-full bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 text-red-400 text-sm font-medium">
+                          ✗ {pushMessage}
+                        </div>
+                      )}
+                      {pushStatus === 'no_sub' && (
+                        <div className="w-full bg-yellow-500/10 border border-yellow-500/20 rounded-2xl px-4 py-3 text-yellow-400 text-sm font-medium space-y-2">
+                          <p>⚠ No subscription found on server.</p>
+                          <button
+                            onClick={requestNotificationPermission}
+                            className="text-yellow-300 underline text-xs"
+                          >
+                            Re-register this device
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <p className="text-sm text-white/40">
@@ -519,6 +563,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     </p>
                   )}
                 </div>
+
 
                 <button 
                   onClick={() => setCurrentScreen('main')} 
