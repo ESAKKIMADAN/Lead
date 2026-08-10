@@ -2,12 +2,6 @@ import { NextResponse } from 'next/server';
 import webpush from 'web-push';
 import { createClient } from '@supabase/supabase-js';
 
-webpush.setVapidDetails(
-  'mailto:test@example.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string,
-  process.env.VAPID_PRIVATE_KEY as string
-);
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -15,6 +9,17 @@ const supabase = createClient(
 
 export async function POST(request: Request) {
   try {
+    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+      console.warn('VAPID keys missing. Web push is disabled.');
+      return NextResponse.json({ error: 'Push notifications not configured' }, { status: 500 });
+    }
+
+    webpush.setVapidDetails(
+      'mailto:test@example.com',
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+
     const { title, body, icon, badge, url, user_id } = await request.json();
 
     if (!user_id) {
