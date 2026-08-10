@@ -1,7 +1,6 @@
 'use client';
 
 import { useSupabase } from '@/lib/SupabaseContext';
-import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { ChevronRight, LogOut, Trash2, User, Bell, Moon, Target, ChevronLeft, Check } from 'lucide-react';
@@ -181,20 +180,22 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
       const subJSON = subscription.toJSON();
 
-      // Save to Supabase
-      const { error: dbErr } = await supabase.from('push_subscriptions').upsert(
-        {
+      // Save via server API (uses service_role to bypass RLS)
+      const res = await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           user_id: profile?.id,
           endpoint: subJSON.endpoint,
           p256dh: subJSON.keys?.p256dh,
           auth: subJSON.keys?.auth,
-        },
-        { onConflict: 'user_id,endpoint' }
-      );
+        }),
+      });
 
-      if (dbErr) {
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
         setPushStatus('error');
-        setPushMessage('Saved locally but failed to sync: ' + dbErr.message);
+        setPushMessage('Failed to save subscription: ' + (errData.error || res.status));
         setEnablingPush(false);
         return;
       }
