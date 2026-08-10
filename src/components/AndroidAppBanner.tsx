@@ -6,6 +6,7 @@ import { Download, X, Smartphone } from 'lucide-react';
 export default function AndroidAppBanner() {
   const [showBanner, setShowBanner] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -14,7 +15,18 @@ export default function AndroidAppBanner() {
     const isAndroidDevice = /Android/i.test(ua);
     setIsAndroid(isAndroidDevice);
 
-    const dismissed = localStorage.getItem('hide_android_apk_banner');
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      const dismissed = localStorage.getItem('hide_app_install_banner');
+      if (!dismissed) {
+        setShowBanner(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const dismissed = localStorage.getItem('hide_app_install_banner');
     if (!dismissed) {
       // Show for Android devices or mobile screen sizes
       const isMobile = window.innerWidth <= 768 || isAndroidDevice;
@@ -22,21 +34,29 @@ export default function AndroidAppBanner() {
         setShowBanner(true);
       }
     }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   const handleDismiss = () => {
     setShowBanner(false);
-    localStorage.setItem('hide_android_apk_banner', 'true');
+    localStorage.setItem('hide_app_install_banner', 'true');
   };
 
-  const handleDownload = () => {
-    // Download APK from public folder
-    const link = document.createElement('a');
-    link.href = '/lead-app.apk';
-    link.download = 'lead-app.apk';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowBanner(false);
+      }
+      setDeferredPrompt(null);
+    } else {
+      // Fallback instruction if the prompt event isn't available
+      alert("To install the app, tap the browser menu (three dots) and select 'Add to Home screen' or 'Install app'.");
+    }
   };
 
   if (!showBanner) return null;
@@ -50,7 +70,7 @@ export default function AndroidAppBanner() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="font-bold text-sm text-white leading-tight">LEAD for Android</h4>
+              <h4 className="font-bold text-sm text-white leading-tight">Install LEAD App</h4>
               {isAndroid && (
                 <span className="text-[9px] uppercase font-bold tracking-widest bg-card-mint/20 text-card-mint px-2 py-0.5 rounded-full">
                   Android Detected
@@ -58,7 +78,7 @@ export default function AndroidAppBanner() {
               )}
             </div>
             <p className="text-xs text-white/60 mt-0.5">
-              Get native background notifications & goal tracking.
+              Add to your home screen for quick access & full screen mode.
             </p>
           </div>
         </div>
@@ -74,11 +94,11 @@ export default function AndroidAppBanner() {
 
       <div className="mt-3 pt-3 border-t border-white/5 flex gap-2">
         <button
-          onClick={handleDownload}
+          onClick={handleInstall}
           className="flex-1 bg-card-orange text-black py-2.5 px-4 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:brightness-95 active:scale-95 transition-all shadow-md"
         >
           <Download className="w-4 h-4" />
-          Download Android APK
+          Install App
         </button>
         <button
           onClick={handleDismiss}
