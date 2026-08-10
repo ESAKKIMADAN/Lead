@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Download, X, Smartphone } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 
 export default function AndroidAppBanner() {
   const [showBanner, setShowBanner] = useState(false);
@@ -61,8 +61,8 @@ export default function AndroidAppBanner() {
     <div className="fixed bottom-4 left-4 right-4 z-50 max-w-md mx-auto bg-[#1A1A1A] border border-white/10 text-white rounded-3xl p-4 shadow-2xl backdrop-blur-xl animate-in slide-in-from-bottom duration-300">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-card-orange/10 border border-card-orange/20 flex items-center justify-center text-card-orange shrink-0">
-            <Smartphone className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-2xl bg-card-purple/10 border border-card-purple/20 flex items-center justify-center text-card-purple shrink-0">
+            <img src="/logo-white.png" alt="LEAD Logo" className="w-6 h-6 object-contain" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -91,7 +91,7 @@ export default function AndroidAppBanner() {
       <div className="mt-3 pt-3 border-t border-white/5 flex gap-2">
         <button
           onClick={handleInstall}
-          className="flex-1 bg-card-orange text-black py-2.5 px-4 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:brightness-95 active:scale-95 transition-all shadow-md"
+          className="flex-1 bg-card-purple text-black py-2.5 px-4 rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:brightness-95 active:scale-95 transition-all shadow-md"
         >
           <Download className="w-4 h-4" />
           Install App
