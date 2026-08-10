@@ -1,4 +1,4 @@
-import { google } from '@ai-sdk/google';
+import { createGroq } from '@ai-sdk/groq';
 import { generateText } from 'ai';
 
 export const runtime = 'nodejs';
@@ -7,10 +7,12 @@ export async function POST(req: Request) {
   try {
     const { userName, goal, reason, category, answer, comment, question } = await req.json();
 
+    const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+
     // If no answer yet — generate the check-in question
     if (!answer) {
       const { text } = await generateText({
-        model: google('gemini-2.5-flash'),
+        model: groq('llama-3.3-70b-versatile'),
         prompt: `You are LEAD — a brutally honest, ego-triggering AI accountability coach.
 Generate ONE short daily check-in question for ${userName} based on their goal.
 
@@ -32,7 +34,7 @@ Reply with ONLY the question. No punctuation style changes needed, just the ques
 
     // If answer is provided — generate a motivational response that triggers their ego
     const { text } = await generateText({
-      model: google('gemini-2.5-flash'),
+      model: groq('llama-3.3-70b-versatile'),
       prompt: `You are LEAD — a brutally honest, ego-triggering AI accountability coach.
 ${userName} just answered their daily check-in.
 

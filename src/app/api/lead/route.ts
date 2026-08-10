@@ -1,4 +1,4 @@
-import { google } from '@ai-sdk/google';
+import { createGroq } from '@ai-sdk/groq';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 
@@ -30,8 +30,10 @@ export async function POST(req: Request) {
   try {
     const input = await req.json();
 
+    const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
+
     const { object } = await generateObject({
-      model: google('gemini-2.5-flash'),
+      model: groq('llama-3.3-70b-versatile'),
       system: LEAD_SYSTEM_PROMPT,
       prompt: `Generate a notification based on the following context:\n${JSON.stringify(input, null, 2)}`,
       schema: z.object({
