@@ -158,30 +158,39 @@ export default function AccountView({ onBack }: AccountViewProps) {
         }
         registration = reg;
 
-        // Ensure worker is active before subscribing (fixes "no active Service Worker" error)
+        // If worker is not active yet, activate it and wait for ready
         if (!registration.active) {
-          const sw = registration.installing || registration.waiting;
-          if (sw) {
-            await new Promise<void>((resolve) => {
-              if (sw.state === 'activated') { resolve(); return; }
-              sw.addEventListener('statechange', () => {
-                if (sw.state === 'activated' || sw.state === 'redundant') resolve();
-              });
-              setTimeout(resolve, 3000);
-            });
-          } else {
-            // Fallback to ready promise with 3s timeout
-            await Promise.race([
-              navigator.serviceWorker.ready,
-              new Promise((res) => setTimeout(res, 3000)),
-            ]);
+          const target = registration.waiting || registration.installing;
+          if (target) {
+            target.postMessage({ type: 'SKIP_WAITING' });
           }
+          try {
+            registration = await Promise.race([
+              navigator.serviceWorker.ready,
+              new Promise<ServiceWorkerRegistration>((_, reject) =>
+                setTimeout(() => reject(new Error('SW activation timed out')), 4000)
+              ),
+            ]);
+          } catch (e) {
+            // Re-fetch registration to see if active now
+            const refreshed = await navigator.serviceWorker.getRegistration('/');
+            if (refreshed?.active) {
+              registration = refreshed;
+            }
+          }
+        }
+
+        if (!registration.active) {
+          setPushStatus('error');
+          setPushMessage('Service worker is activating. Please refresh the page and click Re-register.');
+          return;
         }
       } catch (swErr: any) {
         setPushStatus('error');
         setPushMessage('SW error: ' + swErr.message);
         return;
       }
+
 
 
       // Subscribe fresh with current VAPID key
