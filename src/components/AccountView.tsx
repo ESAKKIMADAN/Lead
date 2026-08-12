@@ -13,7 +13,7 @@ interface AccountViewProps {
 }
 
 export default function AccountView({ onBack }: AccountViewProps) {
-  const { profile, ego, logs, updateProfileName, updateEgo, updatePin, resetAllData, signOut, authError, addEgo } = useSupabase();
+  const { profile, ego, egos, setActiveEgo, logs, updateProfileName, updateEgo, updatePin, resetAllData, signOut, authError, addEgo } = useSupabase();
 
   
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('main');
@@ -491,7 +491,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
             >
               <div className="bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 rounded-[40px] p-6 space-y-6 shadow-sm">
                 <div className="flex items-center justify-between pl-2">
-                  <p className="text-sm font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest">{isNewGoal ? 'New Goal' : 'Goal Setup'}</p>
+                  <p className="text-sm font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest">{isNewGoal ? 'New Goal' : 'Your Goals'}</p>
                   {!isNewGoal && (
                     <button 
                       onClick={() => {
@@ -506,49 +506,83 @@ export default function AccountView({ onBack }: AccountViewProps) {
                   )}
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wider pl-2 block mb-2">Goal Description</label>
-                    <textarea
-                      value={editGoal}
-                      onChange={(e) => setEditGoal(e.target.value)}
-                      rows={3}
-                      className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground rounded-3xl px-5 py-4 outline-none focus:border-black/30 dark:border-white/30 resize-none transition-colors text-lg font-medium"
-                    />
+                {!isNewGoal ? (
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                    {egos.map(e => (
+                      <div 
+                        key={e.id}
+                        onClick={() => {
+                           if (!e.active) setActiveEgo(e.id);
+                        }}
+                        className={`p-5 rounded-3xl border transition-all ${
+                          e.active 
+                            ? 'bg-card-purple border-black/10 dark:border-black/10 text-black shadow-sm' 
+                            : 'bg-black/5 dark:bg-white/5 border-transparent text-foreground hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                           <p className="font-semibold text-[15px] leading-snug">{e.goal}</p>
+                           {e.active && <span className="text-[9px] uppercase font-bold bg-white/50 text-black px-2 py-1 rounded-full whitespace-nowrap">Active</span>}
+                        </div>
+                        <p className="text-xs mt-2 opacity-60 leading-relaxed line-clamp-2">{e.reason}</p>
+                      </div>
+                    ))}
+                    {egos.length === 0 && (
+                      <p className="text-center text-sm text-neutral-500 py-4">No goals found.</p>
+                    )}
                   </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wider pl-2 block mb-2">Goal Description</label>
+                      <textarea
+                        value={editGoal}
+                        onChange={(e) => setEditGoal(e.target.value)}
+                        rows={3}
+                        className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground rounded-3xl px-5 py-4 outline-none focus:border-black/30 dark:border-white/30 resize-none transition-colors text-lg font-medium"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wider pl-2 block mb-2">Why it matters</label>
-                    <textarea
-                      value={editReason}
-                      onChange={(e) => setEditReason(e.target.value)}
-                      rows={3}
-                      className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground rounded-3xl px-5 py-4 outline-none focus:border-black/30 dark:border-white/30 resize-none transition-colors text-lg font-medium"
-                    />
+                    <div>
+                      <label className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wider pl-2 block mb-2">Why it matters</label>
+                      <textarea
+                        value={editReason}
+                        onChange={(e) => setEditReason(e.target.value)}
+                        rows={3}
+                        className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground rounded-3xl px-5 py-4 outline-none focus:border-black/30 dark:border-white/30 resize-none transition-colors text-lg font-medium"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex gap-3 pt-2">
-                  <button 
-                    onClick={handleSaveEgo} 
-                    disabled={saving} 
-                    className="flex-1 bg-foreground text-background py-4 rounded-3xl font-semibold text-lg hover:brightness-90 transition-all disabled:opacity-50"
-                  >
-                    {saving ? 'Saving...' : 'Save'}
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setIsNewGoal(false);
-                      if (ego) {
-                        setEditGoal(ego.goal);
-                        setEditReason(ego.reason);
-                      }
-                      setCurrentScreen('main');
-                    }} 
-                    className="flex-1 bg-black/10 dark:bg-white/10 text-foreground py-4 rounded-3xl font-semibold text-lg hover:bg-black/20 dark:hover:bg-black/20 dark:bg-white/20 transition-all"
-                  >
-                    Cancel
-                  </button>
+                  {isNewGoal ? (
+                    <>
+                      <button 
+                        onClick={handleSaveEgo} 
+                        disabled={saving} 
+                        className="flex-1 bg-foreground text-background py-4 rounded-3xl font-semibold text-lg hover:brightness-90 transition-all disabled:opacity-50"
+                      >
+                        {saving ? 'Saving...' : 'Save'}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setIsNewGoal(false);
+                          setCurrentScreen('main');
+                        }} 
+                        className="flex-1 bg-black/10 dark:bg-white/10 text-foreground py-4 rounded-3xl font-semibold text-lg hover:bg-black/20 dark:hover:bg-black/20 dark:bg-white/20 transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button 
+                      onClick={() => setCurrentScreen('main')} 
+                      className="w-full bg-black/10 dark:bg-white/10 text-foreground py-4 rounded-3xl font-semibold text-lg hover:bg-black/20 dark:hover:bg-black/20 dark:bg-white/20 transition-all"
+                    >
+                      Back
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>

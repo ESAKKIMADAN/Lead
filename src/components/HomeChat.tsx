@@ -46,13 +46,14 @@ export default function HomeChat() {
   const recognitionRef = useRef<any>(null);
   const transcriptRef = useRef('');
   const sendMessageRef = useRef<(text: string) => void>(() => {});
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
+        recognition.continuous = true;
         recognition.interimResults = true;
         
         recognition.onstart = () => {
@@ -60,8 +61,13 @@ export default function HomeChat() {
           const currentVal = inputRef.current?.value || '';
           transcriptRef.current = currentVal;
           recognition._startInput = currentVal;
+          if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = setTimeout(() => {
+            if (recognitionRef.current) recognitionRef.current.stop();
+          }, 5000);
         };
         recognition.onend = () => {
+          if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
           setIsListening(false);
           if (transcriptRef.current.trim()) {
             sendMessageRef.current(transcriptRef.current);
@@ -78,6 +84,10 @@ export default function HomeChat() {
           const fullText = startVal + (startVal && !startVal.endsWith(' ') ? ' ' : '') + transcript;
           setInput(fullText);
           transcriptRef.current = fullText;
+          if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = setTimeout(() => {
+            if (recognitionRef.current) recognitionRef.current.stop();
+          }, 5000);
         };
         
         recognitionRef.current = recognition;
@@ -377,19 +387,19 @@ export default function HomeChat() {
         <div className="flex items-center justify-center gap-3 mb-3 max-w-xl w-full mx-auto">
           <button 
             onClick={() => handleSuggest('Schedule an event: ')} 
-            className="px-5 py-2 rounded-full bg-card-purple text-black text-[11px] font-bold uppercase tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(200,185,240,0.3)]"
+            className="px-5 py-2 rounded-full bg-black/5 dark:bg-white/10 backdrop-blur-md border border-black/10 dark:border-white/10 text-black/80 dark:text-white/80 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 transition-all shadow-sm"
           >
             Events
           </button>
           <button 
             onClick={() => handleSuggest('Add a task: ')} 
-            className="px-5 py-2 rounded-full bg-card-yellow text-black text-[11px] font-bold uppercase tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(244,224,123,0.3)]"
+            className="px-5 py-2 rounded-full bg-black/5 dark:bg-white/10 backdrop-blur-md border border-black/10 dark:border-white/10 text-black/80 dark:text-white/80 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 transition-all shadow-sm"
           >
             Tasks
           </button>
           <button 
             onClick={() => handleSuggest('Take a note: ')} 
-            className="px-5 py-2 rounded-full bg-card-mint text-black text-[11px] font-bold uppercase tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(177,212,204,0.3)]"
+            className="px-5 py-2 rounded-full bg-black/5 dark:bg-white/10 backdrop-blur-md border border-black/10 dark:border-white/10 text-black/80 dark:text-white/80 text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-black/10 dark:hover:bg-white/20 active:scale-95 transition-all shadow-sm"
           >
             Notes
           </button>

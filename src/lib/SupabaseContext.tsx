@@ -68,6 +68,7 @@ interface SupabaseContextType {
   session: Session | null;
   profile: Profile | null;
   ego: Ego | null;
+  egos: Ego[];
   tasks: Task[];
   logs: NotificationLog[];
   notes: Note[];
@@ -83,6 +84,7 @@ interface SupabaseContextType {
   updateProfileName: (name: string) => Promise<void>;
   updateEgo: (id: string, updates: Partial<Ego>) => Promise<void>;
   addEgo: (goal: string, reason: string) => Promise<void>;
+  setActiveEgo: (id: string) => Promise<void>;
   addTask: (title: string, type: 'short_term' | 'long_term' | 'event' | 'daily', scheduledTime?: string, targetDate?: string) => Promise<void>;
   toggleTask: (task: Task) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
@@ -107,6 +109,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [ego, setEgo] = useState<Ego | null>(null);
+  const [egos, setEgos] = useState<Ego[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [logs, setLogs] = useState<NotificationLog[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -129,6 +132,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       if (!session) {
         setProfile(null);
         setEgo(null);
+        setEgos([]);
         setTasks([]);
         setLogs([]);
         setNotes([]);
@@ -169,6 +173,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
           .order('created_at', { ascending: false });
 
         if (egosErr) throw egosErr;
+        setEgos(egosData || []);
         // active ego is either the one marked active, or the most recent one
         const activeEgo = egosData?.find(e => e.active) || egosData?.[0] || null;
         setEgo(activeEgo);
@@ -480,9 +485,34 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) throw error;
+      setEgos(prev => [data, ...prev.map(e => ({ ...e, active: false }))]);
       setEgo(data);
     } catch (err: any) {
       console.error('Error adding ego:', err.message);
+    }
+  };
+
+  const setActiveEgo = async (id: string) => {
+    if (!user) return;
+    try {
+      await supabase
+        .from('egos')
+        .update({ active: false })
+        .eq('user_id', user.id);
+      
+      const { data, error } = await supabase
+        .from('egos')
+        .update({ active: true })
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      setEgos(prev => prev.map(e => e.id === id ? data : { ...e, active: false }));
+      setEgo(data);
+    } catch (err: any) {
+      console.error('Error setting active ego:', err.message);
     }
   };
 
@@ -604,6 +634,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       setProfile(null);
       setEgo(null);
+      setEgos([]);
       setTasks([]);
       setLogs([]);
       setNotes([]);
@@ -619,6 +650,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         session,
         profile,
         ego,
+        egos,
         tasks,
         logs,
         notes,
@@ -634,6 +666,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         updateProfileName,
         updateEgo,
         addEgo,
+        setActiveEgo,
         addTask,
         toggleTask,
         deleteTask,
