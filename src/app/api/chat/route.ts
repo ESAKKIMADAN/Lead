@@ -33,13 +33,13 @@ You MUST append a hidden command to your response if the user asks you to:
    - Use 'short_term' for tasks and todos.
 3. Add a RECURRING DAILY TASK (e.g. "I need to read every day", "daily habit") -> append [ACTION:TASK|Title|daily|HH:MM|YYYY-MM-DD]
    - Use 'daily' for habits or tasks that repeat every day.
-4. Take a NOTE (e.g. "take a note", "save this thought") -> append [ACTION:NOTE|Title|Content of Note|orange]
+4. Take a NOTE (e.g. "take a note", "save this thought") -> append [ACTION:NOTE|Title|Content of Note|mint]
    - 'HH:MM' (24h format, leave empty if none) and 'YYYY-MM-DD' (Target date, calculate based on Current Date).
 
 Example 1: "Added to your calendar. [ACTION:TASK|Birthday|event||2026-08-09]"
 Example 2: "Task created. [ACTION:TASK|Buy groceries|short_term||2026-08-09]"
 Example 3: "Daily habit added. [ACTION:TASK|Read 10 pages|daily||2026-08-09]"
-Example 4: "Note saved. [ACTION:NOTE|My Idea|Need to build a cool app|orange]"
+Example 4: "Note saved. [ACTION:NOTE|My Idea|Need to build a cool app|mint]"
 Always provide a brief verbal confirmation in your text alongside the hidden command.`;
 
     let chatMessages = messages;

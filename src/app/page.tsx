@@ -8,7 +8,7 @@ import TodoView from '@/components/TodoView';
 import NotesView from '@/components/NotesView';
 import AccountView from '@/components/AccountView';
 import Auth from '@/components/Auth';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type Tab = 'calendar' | 'todo' | 'chat' | 'notes' | 'account';
@@ -74,10 +74,16 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 export default function Home() {
   const { user, profile, loading, refreshData } = useSupabase();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
+  const [loaderColor, setLoaderColor] = useState('bg-card-purple');
+
+  useEffect(() => {
+    const colors = ['bg-card-mint', 'bg-card-orange', 'bg-card-yellow', 'bg-card-cream', 'bg-card-purple'];
+    setLoaderColor(colors[Math.floor(Math.random() * colors.length)]);
+  }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-card-purple">
+      <div className={`min-h-screen flex flex-col items-center justify-center ${loaderColor}`}>
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}

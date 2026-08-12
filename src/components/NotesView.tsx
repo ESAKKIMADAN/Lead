@@ -6,10 +6,10 @@ import { useSupabase, type Note } from '@/lib/SupabaseContext';
 import { LayoutGrid, Heart, Circle, CheckCircle2, Mic, Plus, MoreHorizontal, FileText, Pin, Trash2, Pen } from 'lucide-react';
 
 const NOTE_COLORS = [
+  { id: 'mint',     bg: 'bg-card-mint text-black',            icon: <Pin className="w-4 h-4 opacity-50"/> },
   { id: 'orange',   bg: 'bg-card-orange text-black',          icon: <LayoutGrid className="w-4 h-4 opacity-50"/> },
   { id: 'yellow',   bg: 'bg-card-yellow text-black',          icon: <FileText className="w-4 h-4 opacity-50"/> },
   { id: 'cream',    bg: 'bg-card-cream text-black',           icon: <MoreHorizontal className="w-4 h-4 opacity-50"/> },
-  { id: 'mint',     bg: 'bg-card-mint text-black',            icon: <Pin className="w-4 h-4 opacity-50"/> },
   { id: 'purple',   bg: 'bg-card-purple text-black',          icon: <LayoutGrid className="w-4 h-4 opacity-50"/> },
 ];
 
@@ -63,7 +63,7 @@ function NoteCard({
             onClick={e => { e.stopPropagation(); setMenuOpen(v => !v); }}
             className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center flex-shrink-0 text-black/60 hover:text-black transition-colors"
           >
-            <Heart className="w-4 h-4" />
+            <MoreHorizontal className="w-4 h-4" />
           </button>
         </div>
 
