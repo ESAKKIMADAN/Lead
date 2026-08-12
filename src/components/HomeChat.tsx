@@ -374,10 +374,25 @@ export default function HomeChat() {
 
       {/* ── INPUT BAR ── */}
       <div className="absolute bottom-28 left-0 right-0 px-6 z-30 flex flex-col items-center">
-        <div className="flex items-center gap-2 mb-2 max-w-xl w-full justify-start px-2">
-          <button onClick={() => handleSuggest('Schedule an event: ')} className="px-3 py-1 rounded-full bg-black/10 dark:bg-white/10 text-xs font-semibold uppercase tracking-wider hover:bg-black/20 dark:hover:bg-white/20 transition-colors backdrop-blur-md">Event</button>
-          <button onClick={() => handleSuggest('Add a task: ')} className="px-3 py-1 rounded-full bg-black/10 dark:bg-white/10 text-xs font-semibold uppercase tracking-wider hover:bg-black/20 dark:hover:bg-white/20 transition-colors backdrop-blur-md">Task</button>
-          <button onClick={() => handleSuggest('Take a note: ')} className="px-3 py-1 rounded-full bg-black/10 dark:bg-white/10 text-xs font-semibold uppercase tracking-wider hover:bg-black/20 dark:hover:bg-white/20 transition-colors backdrop-blur-md">Note</button>
+        <div className="flex items-center gap-3 mb-3 max-w-xl w-full mx-auto pl-2">
+          <button 
+            onClick={() => handleSuggest('Schedule an event: ')} 
+            className="px-5 py-2 rounded-full bg-card-purple text-black text-[11px] font-bold uppercase tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(200,185,240,0.3)]"
+          >
+            Events
+          </button>
+          <button 
+            onClick={() => handleSuggest('Add a task: ')} 
+            className="px-5 py-2 rounded-full bg-card-yellow text-black text-[11px] font-bold uppercase tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(244,224,123,0.3)]"
+          >
+            Tasks
+          </button>
+          <button 
+            onClick={() => handleSuggest('Take a note: ')} 
+            className="px-5 py-2 rounded-full bg-card-mint text-black text-[11px] font-bold uppercase tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(177,212,204,0.3)]"
+          >
+            Notes
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="relative max-w-xl w-full mx-auto">
           <div className="flex items-center bg-[#1a1a1a]/90 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-[40px] p-2 shadow-2xl">
