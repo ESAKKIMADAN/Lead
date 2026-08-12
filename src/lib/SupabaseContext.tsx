@@ -30,7 +30,7 @@ export interface Task {
   id: string;
   user_id: string;
   title: string;
-  type: 'short_term' | 'long_term' | 'event';
+  type: 'short_term' | 'long_term' | 'event' | 'daily';
   scheduled_time?: string;
   target_date?: string;
   completed: boolean;
@@ -83,7 +83,7 @@ interface SupabaseContextType {
   updateProfileName: (name: string) => Promise<void>;
   updateEgo: (id: string, updates: Partial<Ego>) => Promise<void>;
   addEgo: (goal: string, reason: string) => Promise<void>;
-  addTask: (title: string, type: 'short_term' | 'long_term' | 'event', scheduledTime?: string, targetDate?: string) => Promise<void>;
+  addTask: (title: string, type: 'short_term' | 'long_term' | 'event' | 'daily', scheduledTime?: string, targetDate?: string) => Promise<void>;
   toggleTask: (task: Task) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   addNotificationLog: (log: Omit<NotificationLog, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
@@ -486,7 +486,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addTask = async (title: string, type: 'short_term' | 'long_term' | 'event', scheduledTime?: string, targetDate?: string) => {
+  const addTask = async (title: string, type: 'short_term' | 'long_term' | 'event' | 'daily', scheduledTime?: string, targetDate?: string) => {
     if (!user) return;
     try {
       const { data, error } = await supabase

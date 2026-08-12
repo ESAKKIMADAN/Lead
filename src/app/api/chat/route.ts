@@ -27,14 +27,19 @@ YOUR PERSONA:
 
 ACTIONS:
 You MUST append a hidden command to your response if the user asks you to:
-1. Add a task or schedule an event (e.g. "I need to eat at 4:00") -> append [ACTION:TASK|Title|type|HH:MM|YYYY-MM-DD]
-   - 'type': 'short_term' for tasks, 'event' for calendar scheduling.
-   - 'HH:MM': 24h format (leave empty if none).
-   - 'YYYY-MM-DD': Target date (Calculate based on Current Date. Use Current Date if unspecified).
-2. Take a note or save a list (e.g. "take a note to buy groceries") -> append [ACTION:NOTE|Title|Content of Note|orange]
+1. Schedule an EVENT (e.g. "it's my birthday", "schedule a meeting") -> append [ACTION:TASK|Title|event|HH:MM|YYYY-MM-DD]
+   - Use 'event' for anything related to dates, calendars, or events (like birthdays, meetings).
+2. Add a TASK to the todolist (e.g. "remind me to buy groceries", "create a task") -> append [ACTION:TASK|Title|short_term|HH:MM|YYYY-MM-DD]
+   - Use 'short_term' for tasks and todos.
+3. Add a RECURRING DAILY TASK (e.g. "I need to read every day", "daily habit") -> append [ACTION:TASK|Title|daily|HH:MM|YYYY-MM-DD]
+   - Use 'daily' for habits or tasks that repeat every day.
+4. Take a NOTE (e.g. "take a note", "save this thought") -> append [ACTION:NOTE|Title|Content of Note|orange]
+   - 'HH:MM' (24h format, leave empty if none) and 'YYYY-MM-DD' (Target date, calculate based on Current Date).
 
-Example 1: "Added to your schedule. [ACTION:TASK|Eat|event|16:00|2026-08-09]"
-Example 2: "Note saved. [ACTION:NOTE|Groceries|Buy milk and eggs|orange]"
+Example 1: "Added to your calendar. [ACTION:TASK|Birthday|event||2026-08-09]"
+Example 2: "Task created. [ACTION:TASK|Buy groceries|short_term||2026-08-09]"
+Example 3: "Daily habit added. [ACTION:TASK|Read 10 pages|daily||2026-08-09]"
+Example 4: "Note saved. [ACTION:NOTE|My Idea|Need to build a cool app|orange]"
 Always provide a brief verbal confirmation in your text alongside the hidden command.`;
 
     let chatMessages = messages;
