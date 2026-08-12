@@ -1,5 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 import { SupabaseProvider } from "@/lib/SupabaseContext";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import AndroidAppBanner from "@/components/AndroidAppBanner";
@@ -34,11 +41,18 @@ export default function RootLayout({
               (function() {
                 try {
                   var theme = localStorage.getItem('theme');
+                  var isDark = true;
                   if (theme === 'light') {
                     document.documentElement.classList.remove('dark');
+                    isDark = false;
                   } else {
                     document.documentElement.classList.add('dark');
                   }
+                  var meta = document.createElement('meta');
+                  meta.name = 'theme-color';
+                  meta.content = isDark ? '#000000' : '#ffffff';
+                  meta.id = 'theme-color-meta';
+                  document.head.appendChild(meta);
                 } catch (e) {}
               })();
             `,

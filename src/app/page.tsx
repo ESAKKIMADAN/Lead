@@ -47,6 +47,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
+
   {
     id: 'notes',
     label: 'Notes',
@@ -77,9 +78,29 @@ export default function Home() {
   const [loaderColor, setLoaderColor] = useState('bg-card-purple');
 
   useEffect(() => {
-    const colors = ['bg-card-mint', 'bg-card-orange', 'bg-card-yellow', 'bg-card-cream', 'bg-card-purple'];
-    setLoaderColor(colors[Math.floor(Math.random() * colors.length)]);
+    const colors = [
+      { cls: 'bg-card-mint', hex: '#B1D4CC' },
+      { cls: 'bg-card-orange', hex: '#EBA080' },
+      { cls: 'bg-card-yellow', hex: '#F4E07B' },
+      { cls: 'bg-card-cream', hex: '#F7EED2' },
+      { cls: 'bg-card-purple', hex: '#C8B9F0' }
+    ];
+    const picked = colors[Math.floor(Math.random() * colors.length)];
+    setLoaderColor(picked.cls);
+    
+    const meta = document.getElementById('theme-color-meta');
+    if (meta) meta.setAttribute('content', picked.hex);
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      const meta = document.getElementById('theme-color-meta');
+      if (meta) {
+        const isDark = document.documentElement.classList.contains('dark');
+        meta.setAttribute('content', isDark ? '#000000' : '#ffffff');
+      }
+    }
+  }, [loading]);
 
   if (loading) {
     return (

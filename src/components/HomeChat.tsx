@@ -374,7 +374,7 @@ export default function HomeChat() {
 
       {/* ── INPUT BAR ── */}
       <div className="absolute bottom-28 left-0 right-0 px-6 z-30 flex flex-col items-center">
-        <div className="flex items-center gap-3 mb-3 max-w-xl w-full mx-auto pl-2">
+        <div className="flex items-center justify-end gap-3 mb-3 max-w-xl w-full mx-auto pr-2">
           <button 
             onClick={() => handleSuggest('Schedule an event: ')} 
             className="px-5 py-2 rounded-full bg-card-purple text-black text-[11px] font-bold uppercase tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(200,185,240,0.3)]"
@@ -413,7 +413,7 @@ export default function HomeChat() {
               onKeyDown={handleKeyDown}
               placeholder="Message Lead..."
               disabled={isLoading}
-              className="flex-1 bg-transparent text-foreground placeholder-white/30 px-2 py-3.5 outline-none resize-none text-[15px] font-medium overflow-hidden"
+              className="flex-1 bg-transparent text-foreground placeholder-white/30 px-2 py-3.5 outline-none resize-none text-base font-medium overflow-hidden"
               style={{ minHeight: '52px' }}
             />
             <button

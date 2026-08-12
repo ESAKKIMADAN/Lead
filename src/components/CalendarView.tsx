@@ -162,7 +162,7 @@ export default function CalendarView() {
                     const isPast = cellDate < todayBoundary;
                     const isToday = cellDate.toDateString() === new Date().toDateString();
                     const isSelected = selectedDate.toDateString() === cellDate.toDateString();
-                    const hasEv = eventsOnDay(cell.day) > 0;
+                    const hasEv = !isPast && eventsOnDay(cell.day) > 0;
                     const status = isPast ? getDayStatus(year, monthIdx, cell.day) : 'none';
 
                     return (
