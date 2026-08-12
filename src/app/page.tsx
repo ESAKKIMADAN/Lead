@@ -131,7 +131,7 @@ export default function Home() {
   if (!profile) return <Onboarding onComplete={() => refreshData()} />;
 
   return (
-    <div className="min-h-screen bg-background relative overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-background relative overflow-x-hidden group">
 
       {/* ── MAIN CONTENT with AnimatePresence for smooth tab switching ── */}
       <AnimatePresence mode="wait">
@@ -152,7 +152,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* ── FLOATING NAVIGATION BAR ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none pb-8 px-4">
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none pb-8 px-4 transition-all duration-300 transform group-has-[:focus]:opacity-0 group-has-[:focus]:translate-y-12">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}

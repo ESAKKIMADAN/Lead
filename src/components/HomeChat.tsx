@@ -296,7 +296,7 @@ export default function HomeChat() {
   if (!profile || !ego) return null;
 
   return (
-    <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden select-none font-sans relative">
+    <div className="h-[100dvh] flex flex-col bg-background text-foreground overflow-hidden select-none font-sans relative group">
 
       {/* ── HEADER ── */}
       <header className="px-6 py-8 flex items-center justify-between sticky top-0 z-40 bg-gradient-to-b from-black via-black/80 to-transparent">
@@ -373,7 +373,7 @@ export default function HomeChat() {
       </div>
 
       {/* ── INPUT BAR ── */}
-      <div className="absolute bottom-28 left-0 right-0 px-6 z-30 flex flex-col items-center">
+      <div className="absolute left-0 right-0 px-6 z-30 flex flex-col items-center transition-all duration-300 bottom-28 group-has-[:focus]:bottom-4">
         <div className="flex items-center justify-end gap-3 mb-3 max-w-xl w-full mx-auto pr-2">
           <button 
             onClick={() => handleSuggest('Schedule an event: ')} 
