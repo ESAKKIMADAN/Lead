@@ -373,8 +373,8 @@ export default function HomeChat() {
       </div>
 
       {/* ── INPUT BAR ── */}
-      <div className="absolute left-0 right-0 px-6 z-30 flex flex-col items-center transition-all duration-300 bottom-28 group-has-[:focus]:bottom-4">
-        <div className="flex items-center justify-end gap-3 mb-3 max-w-xl w-full mx-auto pr-2">
+      <div className="absolute left-0 right-0 px-6 z-30 flex flex-col items-center transition-all duration-300 bottom-28 max-sm:group-has-[textarea:focus]:bottom-4">
+        <div className="flex items-center justify-center gap-3 mb-3 max-w-xl w-full mx-auto">
           <button 
             onClick={() => handleSuggest('Schedule an event: ')} 
             className="px-5 py-2 rounded-full bg-card-purple text-black text-[11px] font-bold uppercase tracking-[0.2em] hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(200,185,240,0.3)]"

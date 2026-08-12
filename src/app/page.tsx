@@ -75,7 +75,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 export default function Home() {
   const { user, profile, loading, refreshData } = useSupabase();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
-  const [loaderColor, setLoaderColor] = useState('bg-card-purple');
+  const [loaderColor, setLoaderColor] = useState('');
 
   useEffect(() => {
     const colors = [
@@ -103,6 +103,7 @@ export default function Home() {
   }, [loading]);
 
   if (loading) {
+    if (!loaderColor) return null;
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center ${loaderColor}`}>
         <motion.div
@@ -152,7 +153,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* ── FLOATING NAVIGATION BAR ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none pb-8 px-4 transition-all duration-300 transform group-has-[:focus]:opacity-0 group-has-[:focus]:translate-y-12">
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none pb-8 px-4 transition-all duration-300 transform max-sm:group-has-[textarea:focus]:opacity-0 max-sm:group-has-[textarea:focus]:translate-y-12">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
