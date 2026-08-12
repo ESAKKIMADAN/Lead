@@ -82,6 +82,7 @@ interface SupabaseContextType {
   createInitialData: (name: string, goals: { goal: string; reason: string }[]) => Promise<void>;
   updateProfileName: (name: string) => Promise<void>;
   updateEgo: (id: string, updates: Partial<Ego>) => Promise<void>;
+  addEgo: (goal: string, reason: string) => Promise<void>;
   addTask: (title: string, type: 'short_term' | 'long_term' | 'event', scheduledTime?: string, targetDate?: string) => Promise<void>;
   toggleTask: (task: Task) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
@@ -458,6 +459,33 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addEgo = async (goal: string, reason: string) => {
+    if (!user) return;
+    try {
+      await supabase
+        .from('egos')
+        .update({ active: false })
+        .eq('user_id', user.id);
+
+      const { data, error } = await supabase
+        .from('egos')
+        .insert({
+          user_id: user.id,
+          goal: goal.trim(),
+          reason: reason.trim(),
+          category: 'mindset',
+          active: true,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setEgo(data);
+    } catch (err: any) {
+      console.error('Error adding ego:', err.message);
+    }
+  };
+
   const addTask = async (title: string, type: 'short_term' | 'long_term' | 'event', scheduledTime?: string, targetDate?: string) => {
     if (!user) return;
     try {
@@ -605,6 +633,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         createInitialData,
         updateProfileName,
         updateEgo,
+        addEgo,
         addTask,
         toggleTask,
         deleteTask,

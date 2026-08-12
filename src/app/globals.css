@@ -32,7 +32,7 @@
     --font-heading: 'Outfit', system-ui, sans-serif;
 
     /* ── Light Flat Theme ── */
-    --background: #F7EED2;     /* Cream background for light mode */
+    --background: #ffffff;     /* Cream background for light mode */
     --foreground: #111111;     /* Deep black text */
 
     --card: #ffffff;

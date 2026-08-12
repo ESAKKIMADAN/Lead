@@ -13,7 +13,7 @@ interface AccountViewProps {
 }
 
 export default function AccountView({ onBack }: AccountViewProps) {
-  const { profile, ego, logs, updateProfileName, updateEgo, updatePin, resetAllData, signOut, authError } = useSupabase();
+  const { profile, ego, logs, updateProfileName, updateEgo, updatePin, resetAllData, signOut, authError, addEgo } = useSupabase();
 
   
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('main');
@@ -25,6 +25,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
   const [enablingPush, setEnablingPush] = useState(false);
   const [pushStatus, setPushStatus] = useState<'idle' | 'success' | 'error' | 'no_sub'>('idle');
   const [pushMessage, setPushMessage] = useState('');
+  const [isNewGoal, setIsNewGoal] = useState(false);
 
   const hasNotificationSupport = typeof window !== 'undefined' && 'Notification' in window;
   const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>(
@@ -52,16 +53,16 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
   useEffect(() => {
     if (profile) setEditName(profile.name);
-    if (ego) {
+    if (ego && !isNewGoal) {
       setEditGoal(ego.goal);
       setEditReason(ego.reason);
     }
-  }, [profile, ego]);
+  }, [profile, ego, isNewGoal]);
 
   if (!profile || !ego) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-black/20 dark:border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
@@ -76,10 +77,15 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
   const handleSaveEgo = async () => {
     setSaving(true);
-    await updateEgo(ego.id, {
-      goal: editGoal.trim() || ego.goal,
-      reason: editReason.trim() || ego.reason,
-    });
+    if (isNewGoal) {
+      await addEgo(editGoal.trim(), editReason.trim());
+      setIsNewGoal(false);
+    } else {
+      await updateEgo(ego.id, {
+        goal: editGoal.trim() || ego.goal,
+        reason: editReason.trim() || ego.reason,
+      });
+    }
     setSaving(false);
     setCurrentScreen('main');
   };
@@ -243,7 +249,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
         {/* ── HEADER ── */}
         <div className="flex justify-between items-start">
-          <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-white">
+          <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-foreground">
             My<br/>Settings
           </h1>
           <button
@@ -254,7 +260,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                 setCurrentScreen('main');
               }
             }}
-            className="w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all shadow-sm"
+            className="w-12 h-12 rounded-full bg-black/10 dark:bg-white/10 text-foreground flex items-center justify-center hover:bg-black/20 dark:hover:bg-black/20 dark:bg-white/20 transition-all shadow-sm"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
@@ -276,7 +282,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
               {/* Profile Card */}
               <div 
                 onClick={() => setCurrentScreen('profile')}
-                className="flex items-center justify-between p-6 bg-card-purple border border-white/5 rounded-[40px] cursor-pointer active:scale-95 transition-all shadow-sm text-black"
+                className="flex items-center justify-between p-6 bg-card-purple border border-black/5 dark:border-white/5 rounded-[40px] cursor-pointer active:scale-95 transition-all shadow-sm text-black"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-full bg-black/10 flex items-center justify-center text-black">
@@ -294,34 +300,34 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
               {/* Preferences Section */}
               <div className="space-y-3">
-                <p className="text-xs font-semibold text-white/40 uppercase tracking-widest pl-2">Preferences</p>
+                <p className="text-xs font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest pl-2">Preferences</p>
                 
-                <div className="bg-[#151515] border border-white/5 rounded-[32px] overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 rounded-[32px] overflow-hidden shadow-sm">
                   
                   {/* Goal Setup */}
                   <div 
                     onClick={() => setCurrentScreen('ego')}
-                    className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5"
+                    className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 transition-colors border-b border-black/5 dark:border-white/5"
                   >
-                    <div className="flex items-center text-white">
+                    <div className="flex items-center text-foreground">
                       <span className="text-lg font-medium">Goal Setup</span>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-white/30" />
+                    <ChevronRight className="w-5 h-5 text-black/30 dark:text-white/30" />
                   </div>
 
                   {/* Notifications */}
                   <div 
                     onClick={() => setCurrentScreen('notifications')}
-                    className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5"
+                    className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 transition-colors border-b border-black/5 dark:border-white/5"
                   >
-                    <div className="flex items-center text-white">
+                    <div className="flex items-center text-foreground">
                       <span className="text-lg font-medium">Notifications</span>
                     </div>
                     <div className="flex items-center gap-2">
                       {permissionState === 'granted' && (
                         <span className="text-[10px] font-bold uppercase tracking-widest text-black bg-card-mint px-3 py-1 rounded-full">Active</span>
                       )}
-                      <ChevronRight className="w-5 h-5 text-white/30" />
+                      <ChevronRight className="w-5 h-5 text-black/30 dark:text-white/30" />
                     </div>
                   </div>
 
@@ -331,28 +337,28 @@ export default function AccountView({ onBack }: AccountViewProps) {
                       setNewPin('');
                       setCurrentScreen('pin');
                     }}
-                    className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5"
+                    className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 transition-colors border-b border-black/5 dark:border-white/5"
                   >
-                    <div className="flex items-center text-white">
+                    <div className="flex items-center text-foreground">
                       <span className="text-lg font-medium">Change PIN</span>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-white/30" />
+                    <ChevronRight className="w-5 h-5 text-black/30 dark:text-white/30" />
                   </div>
 
                   {/* Dark Mode */}
                   <div className="flex items-center justify-between px-6 py-5">
-                    <div className="flex items-center text-white">
+                    <div className="flex items-center text-foreground">
                       <span className="text-lg font-medium">Dark Mode</span>
                     </div>
                     <div 
                       onClick={toggleTheme}
                       className={`w-14 h-8 rounded-full p-1 cursor-pointer flex items-center transition-colors ${
-                        isDarkMode ? 'bg-card-orange justify-end' : 'bg-white/10 justify-start'
+                        isDarkMode ? 'bg-card-orange justify-end' : 'bg-black/10 dark:bg-white/10 justify-start'
                       }`}
                     >
                       <motion.div 
                         layout 
-                        className={`w-6 h-6 rounded-full shadow-sm ${isDarkMode ? 'bg-black' : 'bg-white/50'}`}
+                        className={`w-6 h-6 rounded-full shadow-sm ${isDarkMode ? 'bg-black' : 'bg-black/50 dark:bg-white/50'}`}
                       />
                     </div>
                   </div>
@@ -361,15 +367,15 @@ export default function AccountView({ onBack }: AccountViewProps) {
               </div>
 
               {/* Danger Zone */}
-              <div className="bg-[#151515] border border-white/5 rounded-[32px] overflow-hidden shadow-sm">
+              <div className="bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 rounded-[32px] overflow-hidden shadow-sm">
                 <div 
                   onClick={signOut}
-                  className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-white/5 transition-colors border-b border-white/5"
+                  className="flex items-center justify-between px-6 py-5 cursor-pointer hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 transition-colors border-b border-black/5 dark:border-white/5"
                 >
-                  <div className="flex items-center text-white">
-                    <span className="text-lg font-medium text-white/80">Sign Out</span>
+                  <div className="flex items-center text-foreground">
+                    <span className="text-lg font-medium text-black/80 dark:text-white/80">Sign Out</span>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-white/30" />
+                  <ChevronRight className="w-5 h-5 text-black/30 dark:text-white/30" />
                 </div>
 
                 <div 
@@ -395,11 +401,11 @@ export default function AccountView({ onBack }: AccountViewProps) {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <div className="bg-[#151515] border border-white/5 rounded-[40px] p-6 space-y-6 shadow-sm">
-                <p className="text-sm font-semibold text-white/40 uppercase tracking-widest pl-2">Update PIN</p>
+              <div className="bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 rounded-[40px] p-6 space-y-6 shadow-sm">
+                <p className="text-sm font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest pl-2">Update PIN</p>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-white/50 uppercase tracking-wider pl-2 block">New 4-Digit PIN</label>
+                  <label className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wider pl-2 block">New 4-Digit PIN</label>
                   <input
                     type="password"
                     inputMode="numeric"
@@ -407,7 +413,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     maxLength={4}
                     value={newPin}
                     onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-                    className="w-full bg-[#0a0a0a] border border-white/10 text-white rounded-3xl px-6 py-4 outline-none focus:border-white/20 transition-colors text-center tracking-[1em] font-mono text-xl"
+                    className="w-full bg-black/5 dark:bg-[#0a0a0a] border border-black/10 dark:border-white/10 text-foreground rounded-3xl px-6 py-4 outline-none focus:border-black/20 dark:border-white/20 transition-colors text-center tracking-[1em] font-mono text-xl"
                     placeholder="••••"
                   />
                 </div>
@@ -420,7 +426,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
               <button
                 onClick={handleUpdatePin}
                 disabled={saving || !/^\d{4}$/.test(newPin)}
-                className="w-full bg-white text-black py-4 rounded-full font-bold tracking-wide hover:bg-neutral-200 active:scale-[0.98] transition-all flex justify-center disabled:opacity-50"
+                className="w-full bg-foreground text-background py-4 rounded-full font-bold tracking-wide hover:bg-neutral-200 active:scale-[0.98] transition-all flex justify-center disabled:opacity-50"
               >
                 {saving ? (
                   <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -441,16 +447,16 @@ export default function AccountView({ onBack }: AccountViewProps) {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <div className="bg-[#151515] border border-white/5 rounded-[40px] p-6 space-y-6 shadow-sm">
-                <p className="text-sm font-semibold text-white/40 uppercase tracking-widest pl-2">Edit Profile</p>
+              <div className="bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 rounded-[40px] p-6 space-y-6 shadow-sm">
+                <p className="text-sm font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest pl-2">Edit Profile</p>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-white/50 uppercase tracking-wider pl-2 block">Your Name</label>
+                  <label className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wider pl-2 block">Your Name</label>
                   <input
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 text-white rounded-3xl px-5 py-4 outline-none focus:border-white/30 transition-colors text-lg font-medium"
+                    className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground rounded-3xl px-5 py-4 outline-none focus:border-black/30 dark:border-white/30 transition-colors text-lg font-medium"
                   />
                 </div>
 
@@ -458,13 +464,13 @@ export default function AccountView({ onBack }: AccountViewProps) {
                   <button 
                     onClick={handleSaveProfileName} 
                     disabled={saving || !editName.trim()} 
-                    className="flex-1 bg-white text-black py-4 rounded-3xl font-semibold text-lg hover:brightness-90 transition-all disabled:opacity-50"
+                    className="flex-1 bg-foreground text-background py-4 rounded-3xl font-semibold text-lg hover:brightness-90 transition-all disabled:opacity-50"
                   >
                     {saving ? 'Saving...' : 'Save'}
                   </button>
                   <button 
                     onClick={() => setCurrentScreen('main')} 
-                    className="flex-1 bg-white/10 text-white py-4 rounded-3xl font-semibold text-lg hover:bg-white/20 transition-all"
+                    className="flex-1 bg-black/10 dark:bg-white/10 text-foreground py-4 rounded-3xl font-semibold text-lg hover:bg-black/20 dark:hover:bg-black/20 dark:bg-white/20 transition-all"
                   >
                     Cancel
                   </button>
@@ -483,27 +489,41 @@ export default function AccountView({ onBack }: AccountViewProps) {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <div className="bg-[#151515] border border-white/5 rounded-[40px] p-6 space-y-6 shadow-sm">
-                <p className="text-sm font-semibold text-white/40 uppercase tracking-widest pl-2">Goal Setup</p>
+              <div className="bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 rounded-[40px] p-6 space-y-6 shadow-sm">
+                <div className="flex items-center justify-between pl-2">
+                  <p className="text-sm font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest">{isNewGoal ? 'New Goal' : 'Goal Setup'}</p>
+                  {!isNewGoal && (
+                    <button 
+                      onClick={() => {
+                        setIsNewGoal(true);
+                        setEditGoal('');
+                        setEditReason('');
+                      }} 
+                      className="text-xs font-semibold bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-black/20 dark:bg-white/20 text-foreground px-3 py-1.5 rounded-full transition-colors"
+                    >
+                      + Add New Goal
+                    </button>
+                  )}
+                </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-white/50 uppercase tracking-wider pl-2 block mb-2">Goal Description</label>
+                    <label className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wider pl-2 block mb-2">Goal Description</label>
                     <textarea
                       value={editGoal}
                       onChange={(e) => setEditGoal(e.target.value)}
                       rows={3}
-                      className="w-full bg-white/5 border border-white/10 text-white rounded-3xl px-5 py-4 outline-none focus:border-white/30 resize-none transition-colors text-lg font-medium"
+                      className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground rounded-3xl px-5 py-4 outline-none focus:border-black/30 dark:border-white/30 resize-none transition-colors text-lg font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-white/50 uppercase tracking-wider pl-2 block mb-2">Why it matters</label>
+                    <label className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wider pl-2 block mb-2">Why it matters</label>
                     <textarea
                       value={editReason}
                       onChange={(e) => setEditReason(e.target.value)}
                       rows={3}
-                      className="w-full bg-white/5 border border-white/10 text-white rounded-3xl px-5 py-4 outline-none focus:border-white/30 resize-none transition-colors text-lg font-medium"
+                      className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground rounded-3xl px-5 py-4 outline-none focus:border-black/30 dark:border-white/30 resize-none transition-colors text-lg font-medium"
                     />
                   </div>
                 </div>
@@ -512,13 +532,20 @@ export default function AccountView({ onBack }: AccountViewProps) {
                   <button 
                     onClick={handleSaveEgo} 
                     disabled={saving} 
-                    className="flex-1 bg-white text-black py-4 rounded-3xl font-semibold text-lg hover:brightness-90 transition-all disabled:opacity-50"
+                    className="flex-1 bg-foreground text-background py-4 rounded-3xl font-semibold text-lg hover:brightness-90 transition-all disabled:opacity-50"
                   >
                     {saving ? 'Saving...' : 'Save'}
                   </button>
                   <button 
-                    onClick={() => setCurrentScreen('main')} 
-                    className="flex-1 bg-white/10 text-white py-4 rounded-3xl font-semibold text-lg hover:bg-white/20 transition-all"
+                    onClick={() => {
+                      setIsNewGoal(false);
+                      if (ego) {
+                        setEditGoal(ego.goal);
+                        setEditReason(ego.reason);
+                      }
+                      setCurrentScreen('main');
+                    }} 
+                    className="flex-1 bg-black/10 dark:bg-white/10 text-foreground py-4 rounded-3xl font-semibold text-lg hover:bg-black/20 dark:hover:bg-black/20 dark:bg-white/20 transition-all"
                   >
                     Cancel
                   </button>
@@ -537,9 +564,9 @@ export default function AccountView({ onBack }: AccountViewProps) {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <div className="bg-[#151515] border border-white/5 rounded-[40px] p-6 space-y-5 shadow-sm">
+              <div className="bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 rounded-[40px] p-6 space-y-5 shadow-sm">
                 <div>
-                  <p className="text-sm font-semibold text-white/40 uppercase tracking-widest pl-2">Notifications</p>
+                  <p className="text-sm font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest pl-2">Notifications</p>
                 </div>
 
                 {/* ── Status & Buttons ── */}
@@ -581,7 +608,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                   <button
                     onClick={handleTestPush}
                     disabled={saving}
-                    className="bg-white/10 text-white px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full hover:bg-white/20 transition-all disabled:opacity-50 active:scale-95"
+                    className="bg-black/10 dark:bg-white/10 text-foreground px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full hover:bg-black/20 dark:hover:bg-black/20 dark:bg-white/20 transition-all disabled:opacity-50 active:scale-95"
                   >
                     {saving ? 'Sending...' : 'Send Test Notification'}
                   </button>
@@ -605,22 +632,22 @@ export default function AccountView({ onBack }: AccountViewProps) {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <div className="bg-[#151515] border border-red-500/20 rounded-[40px] p-6 space-y-6 text-center shadow-sm">
+              <div className="bg-white dark:bg-[#151515] border border-red-500/20 rounded-[40px] p-6 space-y-6 text-center shadow-sm">
                 <p className="text-sm font-semibold text-red-500/80 uppercase tracking-widest">Danger Zone</p>
-                <p className="text-sm text-white/70 leading-relaxed max-w-[280px] mx-auto">
+                <p className="text-sm text-black/70 dark:text-white/70 leading-relaxed max-w-[280px] mx-auto">
                   Are you sure? This will permanently erase your profile, active goals, streaks, and all tasks.
                 </p>
 
                 <div className="flex gap-3 pt-2">
                   <button 
                     onClick={handleReset} 
-                    className="flex-1 bg-red-500 text-white py-4 rounded-3xl font-semibold text-lg hover:bg-red-600 transition-all"
+                    className="flex-1 bg-red-500 text-foreground py-4 rounded-3xl font-semibold text-lg hover:bg-red-600 transition-all"
                   >
                     Reset All
                   </button>
                   <button 
                     onClick={() => setCurrentScreen('main')} 
-                    className="flex-1 bg-white/10 text-white py-4 rounded-3xl font-semibold text-lg hover:bg-white/20 transition-all"
+                    className="flex-1 bg-black/10 dark:bg-white/10 text-foreground py-4 rounded-3xl font-semibold text-lg hover:bg-black/20 dark:hover:bg-black/20 dark:bg-white/20 transition-all"
                   >
                     Cancel
                   </button>

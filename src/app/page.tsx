@@ -77,24 +77,24 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-card-purple">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="flex flex-col items-center gap-8"
+          className="flex flex-col items-center justify-center"
         >
-          <motion.img 
-            src="/logo.svg" 
-            alt="LEAD" 
-            className="w-10 h-10 object-contain"
+          <motion.svg 
+            viewBox="0 0 100 100" 
+            fill="currentColor"
+            className="w-16 h-16 text-black"
             animate={{ opacity: [0.4, 1, 0.4] }}
             transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-          />
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-foreground text-lg font-bold tracking-[0.3em] uppercase">LEAD</p>
-            <p className="text-muted-foreground text-[10px] font-semibold tracking-[0.4em] uppercase">by SolveCrew</p>
-          </div>
+          >
+            <polygon points="50,15 15,35 15,47 50,27 85,47 85,35" />
+            <polygon points="50,33 15,53 15,65 50,45 85,65 85,53" />
+            <polygon points="50,51 15,71 15,83 50,63 85,83 85,71" />
+          </motion.svg>
         </motion.div>
       </div>
     );
@@ -130,7 +130,7 @@ export default function Home() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, type: 'spring', damping: 26, stiffness: 320 }}
-          className="pointer-events-auto flex items-center gap-1 bg-black border border-white/10 rounded-full p-2 shadow-[0_20px_40px_rgba(0,0,0,0.8)]"
+          className="pointer-events-auto flex items-center gap-1 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-full p-2 shadow-2xl dark:shadow-[0_20px_40px_rgba(0,0,0,0.8)]"
         >
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -143,15 +143,15 @@ export default function Home() {
                 aria-label={tab.label}
                 className={`relative flex items-center justify-center w-[52px] h-[52px] rounded-full transition-all duration-300 active:scale-95 select-none
                   ${isActive 
-                    ? (isCenter ? 'text-black' : 'text-white') 
-                    : 'text-white/40 hover:text-white/80 hover:bg-white/5'}
+                    ? (isCenter ? 'text-black' : 'text-black dark:text-white') 
+                    : 'text-black/40 dark:text-white/40 hover:text-black/80 dark:hover:text-white/80 hover:bg-black/5 dark:hover:bg-white/5'}
                 `}
               >
                 {/* Active dynamic island pill */}
                 {isActive && (
                   <motion.div
                     layoutId="nav-active-pill"
-                    className={`absolute inset-0 rounded-full ${isCenter ? 'bg-card-purple shadow-[0_0_20px_rgba(167,139,250,0.2)]' : 'bg-white/15'}`}
+                    className={`absolute inset-0 rounded-full ${isCenter ? 'bg-card-purple shadow-[0_0_20px_rgba(167,139,250,0.2)]' : 'bg-black/10 dark:bg-white/15'}`}
                     transition={{ type: 'spring', damping: 25, stiffness: 350 }}
                   />
                 )}

@@ -74,12 +74,12 @@ export default function TodoView() {
 
         {/* ── HEADER ── */}
         <div className="flex justify-between items-start">
-          <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-white">
+          <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-foreground">
             My<br/>Tasks
           </h1>
           <button
             onClick={() => setShowInput(true)}
-            className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+            className="w-12 h-12 rounded-full bg-white text-black border border-black/5 dark:border-transparent flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
           >
             <Plus className="w-6 h-6 stroke-[2.5]" />
           </button>
@@ -90,7 +90,7 @@ export default function TodoView() {
           <button
             onClick={() => { setActiveTab('daily'); setActiveDateOffset(0); }}
             className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
-              activeTab === 'daily' && activeDateOffset === 0 ? 'border-white text-white' : 'border-white/20 text-white/50'
+              activeTab === 'daily' && activeDateOffset === 0 ? 'border-black text-black dark:border-white dark:text-white' : 'border-black/20 text-black/50 dark:border-white/20 dark:text-white/50'
             }`}
           >
             Today
@@ -98,7 +98,7 @@ export default function TodoView() {
           <button
             onClick={() => { setActiveTab('project'); setActiveDateOffset(1); }}
             className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
-              activeDateOffset === 1 ? 'border-white text-white' : 'border-white/20 text-white/50'
+              activeDateOffset === 1 ? 'border-black text-black dark:border-white dark:text-white' : 'border-black/20 text-black/50 dark:border-white/20 dark:text-white/50'
             }`}
           >
             Tomorrow
@@ -133,7 +133,7 @@ export default function TodoView() {
         </div>
 
         {/* ── WEEKDAY ROW (Simplified) ── */}
-        <div className="bg-[#151515] rounded-[32px] p-5 border border-white/5 flex justify-between items-center">
+        <div className="bg-white dark:bg-[#151515] rounded-[32px] p-5 border border-black/5 dark:border-white/5 flex justify-between items-center shadow-sm dark:shadow-none">
           {WEEKDAYS.map(({ day, key }) => {
             const isToday = key === todayDayIdx;
             
@@ -145,7 +145,7 @@ export default function TodoView() {
             return (
               <div key={day+key} className="flex flex-col items-center gap-1.5">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  isToday ? 'bg-card-yellow text-black' : isPast ? 'bg-white/10 text-white/50' : 'bg-transparent text-white/30'
+                  isToday ? 'bg-card-yellow text-black shadow-sm dark:shadow-none' : isPast ? 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50' : 'bg-transparent text-black/30 dark:text-white/30'
                 }`}>
                   {day}
                 </div>
@@ -158,10 +158,10 @@ export default function TodoView() {
         <div className="space-y-3">
           <AnimatePresence initial={false}>
             {dayTasks.length === 0 ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white/5 border border-white/5 rounded-[40px] p-12 text-center">
-                <CalendarDays className="w-12 h-12 mx-auto mb-4 opacity-20 text-white" />
-                <p className="text-lg font-medium text-white/70">All clear</p>
-                <p className="text-sm text-white/40 mt-1">Tap + to add a task</p>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-[40px] p-12 text-center shadow-sm dark:shadow-none">
+                <CalendarDays className="w-12 h-12 mx-auto mb-4 opacity-20 text-foreground" />
+                <p className="text-lg font-medium text-black/70 dark:text-white/70">All clear</p>
+                <p className="text-sm text-black/40 dark:text-white/40 mt-1">Tap + to add a task</p>
               </motion.div>
             ) : (
               dayTasks.map((task, i) => (
@@ -170,24 +170,24 @@ export default function TodoView() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className={`p-5 rounded-[32px] flex flex-col justify-center transition-all min-h-[96px] relative overflow-hidden ${
-                    task.completed ? 'bg-[#151515] border border-white/5 opacity-60' : 'bg-card-mint text-black shadow-sm'
+                  className={`p-5 rounded-[32px] flex flex-col justify-center transition-all min-h-[96px] relative overflow-hidden shadow-sm dark:shadow-none ${
+                    task.completed ? 'bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 opacity-60' : 'bg-card-mint text-black border border-black/5 dark:border-transparent'
                   }`}
                 >
                   <div className="flex items-center gap-4 relative z-10">
                     <button onClick={() => toggleTask(task)} className="flex-shrink-0">
                       {task.completed ? (
-                        <CheckCircle2 className="w-7 h-7 text-white/40" />
+                        <CheckCircle2 className="w-7 h-7 text-black/40 dark:text-white/40" />
                       ) : (
                         <Circle className="w-7 h-7 text-black/30 hover:text-black/60 transition-colors" />
                       )}
                     </button>
                     
                     <div className="flex-1 min-w-0 pr-4">
-                      <p className={`text-lg font-medium leading-tight truncate ${task.completed ? 'line-through text-white/60' : 'text-black'}`}>
+                      <p className={`text-lg font-medium leading-tight truncate ${task.completed ? 'line-through text-black/60 dark:text-white/60' : 'text-black'}`}>
                         {task.title}
                       </p>
-                      <p className={`text-sm mt-0.5 font-medium ${task.completed ? 'text-white/40' : 'text-black/50'}`}>
+                      <p className={`text-sm mt-0.5 font-medium ${task.completed ? 'text-black/40 dark:text-white/40' : 'text-black/50'}`}>
                         {task.scheduled_time || 'Anytime'}
                       </p>
                     </div>
@@ -195,7 +195,7 @@ export default function TodoView() {
                     <button
                       onClick={() => deleteTask(task.id)}
                       className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-                        task.completed ? 'hover:bg-white/10 text-white/40' : 'hover:bg-black/10 text-black/40'
+                        task.completed ? 'hover:bg-black/10 dark:hover:bg-white/10 text-black/40 dark:text-white/40' : 'hover:bg-black/10 text-black/40'
                       }`}
                     >
                       <Trash2 className="w-4 h-4" />

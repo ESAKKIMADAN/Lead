@@ -289,7 +289,7 @@ export default function HomeChat() {
 
       {/* ── HEADER ── */}
       <header className="px-6 py-8 flex items-center justify-between sticky top-0 z-40 bg-gradient-to-b from-black via-black/80 to-transparent">
-        <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-white">
+        <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-foreground">
           Lead
         </h1>
       </header>
@@ -307,10 +307,10 @@ export default function HomeChat() {
               <div className="w-20 h-20 rounded-[32px] bg-card-orange text-black flex items-center justify-center mx-auto mb-4 border border-white/5">
                 <Target className="w-10 h-10" />
               </div>
-              <h2 className="text-2xl font-medium text-white">
+              <h2 className="text-2xl font-medium text-foreground">
                 {greeting}, {profile.name}.
               </h2>
-              <p className="text-white/50 text-sm max-w-[250px] mx-auto leading-relaxed">
+              <p className="text-black/50 dark:text-white/50 text-sm max-w-[250px] mx-auto leading-relaxed">
                 Goal: {ego.goal}
               </p>
             </motion.div>
@@ -320,7 +320,7 @@ export default function HomeChat() {
                 <button
                   key={prompt}
                   onClick={() => sendMessage(prompt)}
-                  className="text-left text-sm font-medium bg-white/5 border border-white/10 text-white/80 p-5 rounded-[24px] hover:bg-white/10 transition-colors leading-snug"
+                  className="text-left text-sm font-medium bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-black/80 dark:text-white/80 p-5 rounded-[24px] hover:bg-black/10 dark:hover:bg-white/10 transition-colors leading-snug"
                 >
                   {prompt}
                 </button>
@@ -341,7 +341,7 @@ export default function HomeChat() {
                 className={`px-6 py-4 rounded-[32px] max-w-[85%] text-[15px] font-medium leading-relaxed whitespace-pre-wrap ${
                   m.role === 'user'
                     ? 'bg-card-yellow text-black rounded-tr-lg'
-                    : 'bg-[#151515] border border-white/5 text-white rounded-tl-lg'
+                    : 'bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 shadow-sm dark:shadow-none text-foreground rounded-tl-lg'
                 }`}
               >
                 {m.content}
@@ -352,7 +352,7 @@ export default function HomeChat() {
 
         {isLoading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-start">
-            <div className="px-6 py-4 rounded-[32px] rounded-tl-lg bg-[#151515] border border-white/5 text-white/70 text-[15px] leading-relaxed max-w-[85%]">
+            <div className="px-6 py-4 rounded-[32px] rounded-tl-lg bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 shadow-sm dark:shadow-none text-black/70 dark:text-white/70 text-[15px] leading-relaxed max-w-[85%]">
               {streamingText || 'Thinking...'}
             </div>
           </motion.div>
@@ -364,12 +364,12 @@ export default function HomeChat() {
       {/* ── INPUT BAR ── */}
       <div className="absolute bottom-28 left-0 right-0 px-6 z-30">
         <form onSubmit={handleSubmit} className="relative max-w-xl mx-auto">
-          <div className="flex items-center bg-[#1a1a1a]/90 backdrop-blur-2xl border border-white/10 rounded-[40px] p-2 shadow-2xl">
+          <div className="flex items-center bg-[#1a1a1a]/90 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-[40px] p-2 shadow-2xl">
             <button 
               type="button"
               onClick={toggleListening}
               className={`w-12 h-12 flex items-center justify-center flex-shrink-0 transition-colors ${
-                isListening ? 'text-card-orange animate-pulse' : 'text-white/50 hover:text-white'
+                isListening ? 'text-card-orange animate-pulse' : 'text-black/50 dark:text-white/50 hover:text-foreground'
               }`}
             >
               <Mic className="w-5 h-5" />
@@ -382,7 +382,7 @@ export default function HomeChat() {
               onKeyDown={handleKeyDown}
               placeholder="Message Lead..."
               disabled={isLoading}
-              className="flex-1 bg-transparent text-white placeholder-white/30 px-2 py-3.5 outline-none resize-none text-[15px] font-medium overflow-hidden"
+              className="flex-1 bg-transparent text-foreground placeholder-white/30 px-2 py-3.5 outline-none resize-none text-[15px] font-medium overflow-hidden"
               style={{ minHeight: '52px' }}
             />
             <button

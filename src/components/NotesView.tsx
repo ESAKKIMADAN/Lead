@@ -94,17 +94,17 @@ function NoteCard({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.92 }}
             onClick={e => e.stopPropagation()}
-            className="absolute top-12 right-4 z-20 w-36 bg-black rounded-2xl shadow-xl border border-white/10 overflow-hidden text-white"
+            className="absolute top-12 right-4 z-20 w-36 bg-black rounded-2xl shadow-xl border border-black/10 dark:border-white/10 overflow-hidden text-foreground"
           >
             <button
               onClick={() => { onPin(note.id, !note.pinned); setMenuOpen(false); }}
-              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium hover:bg-white/10"
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium hover:bg-black/10 dark:hover:bg-white/10"
             >
               <Pin className="w-4 h-4"/> {note.pinned ? 'Unpin' : 'Pin'}
             </button>
             <button
               onClick={() => { onEdit(note); setMenuOpen(false); }}
-              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium hover:bg-white/10"
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium hover:bg-black/10 dark:hover:bg-white/10"
             >
               <Pen className="w-4 h-4"/> Edit
             </button>
@@ -147,12 +147,12 @@ function NoteEditor({
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="w-full sm:max-w-md bg-[#111] sm:rounded-[40px] rounded-t-[40px] p-6 space-y-4 shadow-2xl h-[85vh] sm:h-auto flex flex-col border border-white/10"
+        className="w-full sm:max-w-md bg-[#111] sm:rounded-[40px] rounded-t-[40px] p-6 space-y-4 shadow-2xl h-[85vh] sm:h-auto flex flex-col border border-black/10 dark:border-white/10"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-xl text-white">{note?.id ? 'Edit Note' : 'New Note'}</h3>
-          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center">
+          <h3 className="font-semibold text-xl text-foreground">{note?.id ? 'Edit Note' : 'New Note'}</h3>
+          <button onClick={onClose} className="w-10 h-10 rounded-full bg-black/10 dark:bg-white/10 text-foreground flex items-center justify-center">
             <Plus className="w-5 h-5 rotate-45" />
           </button>
         </div>
@@ -162,14 +162,14 @@ function NoteEditor({
           placeholder="Title"
           value={title}
           onChange={e => setTitle(e.target.value)}
-          className="w-full bg-transparent text-white font-medium text-3xl placeholder-white/30 outline-none"
+          className="w-full bg-transparent text-foreground font-medium text-3xl placeholder-white/30 outline-none"
         />
 
         <textarea
           placeholder="Start writing..."
           value={content}
           onChange={e => setContent(e.target.value)}
-          className="w-full flex-1 bg-transparent text-white/80 text-lg leading-relaxed font-medium outline-none resize-none placeholder-white/20 mt-4"
+          className="w-full flex-1 bg-transparent text-black/80 dark:text-white/80 text-lg leading-relaxed font-medium outline-none resize-none placeholder-white/20 mt-4"
         />
 
         <div className="flex items-center gap-3 pt-4 pb-2">
@@ -230,7 +230,7 @@ export default function NotesView() {
           </h1>
           <button
             onClick={() => setEditingNote('new')}
-            className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+            className="w-12 h-12 rounded-full bg-white text-black border border-black/5 dark:border-transparent flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
           >
             <Plus className="w-6 h-6 stroke-[2.5]" />
           </button>
@@ -241,7 +241,7 @@ export default function NotesView() {
           <button
             onClick={() => setActiveTab('All')}
             className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
-              activeTab === 'All' ? 'border-white text-white' : 'border-white/20 text-white/50'
+              activeTab === 'All' ? 'border-white text-foreground' : 'border-white/20 text-black/50 dark:text-white/50'
             }`}
           >
             All <span className="ml-1 opacity-50 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">{notes.length}</span>
@@ -249,7 +249,7 @@ export default function NotesView() {
           <button
             onClick={() => setActiveTab('Important')}
             className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
-              activeTab === 'Important' ? 'border-white text-white' : 'border-white/20 text-white/50'
+              activeTab === 'Important' ? 'border-white text-foreground' : 'border-white/20 text-black/50 dark:text-white/50'
             }`}
           >
             Important
@@ -257,7 +257,7 @@ export default function NotesView() {
           <button
             onClick={() => setActiveTab('To-do')}
             className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
-              activeTab === 'To-do' ? 'border-white text-white' : 'border-white/20 text-white/50'
+              activeTab === 'To-do' ? 'border-white text-foreground' : 'border-white/20 text-black/50 dark:text-white/50'
             }`}
           >
             To-do
@@ -267,10 +267,10 @@ export default function NotesView() {
         {/* ── NOTES GRID ── */}
         <div className="grid grid-cols-2 gap-4">
           {filtered.length === 0 ? (
-            <div className="col-span-2 bg-white/5 rounded-[40px] p-12 text-center border border-white/5">
+            <div className="col-span-2 bg-black/5 dark:bg-white/5 rounded-[40px] p-12 text-center border border-white/5">
               <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p className="text-lg font-medium text-white/70">No notes here</p>
-              <p className="text-sm text-white/40 mt-1">Tap + to add one</p>
+              <p className="text-lg font-medium text-black/70 dark:text-white/70">No notes here</p>
+              <p className="text-sm text-black/40 dark:text-white/40 mt-1">Tap + to add one</p>
             </div>
           ) : (
             filtered.map(n => (
