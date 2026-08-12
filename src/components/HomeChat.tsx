@@ -57,7 +57,9 @@ export default function HomeChat() {
         
         recognition.onstart = () => {
           setIsListening(true);
-          transcriptRef.current = '';
+          const currentVal = inputRef.current?.value || '';
+          transcriptRef.current = currentVal;
+          recognition._startInput = currentVal;
         };
         recognition.onend = () => {
           setIsListening(false);
@@ -72,8 +74,10 @@ export default function HomeChat() {
           for (let i = 0; i < event.results.length; ++i) {
             transcript += event.results[i][0].transcript;
           }
-          setInput(transcript);
-          transcriptRef.current = transcript;
+          const startVal = recognition._startInput || '';
+          const fullText = startVal + (startVal && !startVal.endsWith(' ') ? ' ' : '') + transcript;
+          setInput(fullText);
+          transcriptRef.current = fullText;
         };
         
         recognitionRef.current = recognition;
@@ -270,6 +274,13 @@ export default function HomeChat() {
     sendMessageRef.current = sendMessage;
   }, [messages, isLoading, profile, ego]);
 
+  const handleSuggest = (prefix: string) => {
+    setInput(prefix);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(input);
@@ -362,8 +373,13 @@ export default function HomeChat() {
       </div>
 
       {/* ── INPUT BAR ── */}
-      <div className="absolute bottom-28 left-0 right-0 px-6 z-30">
-        <form onSubmit={handleSubmit} className="relative max-w-xl mx-auto">
+      <div className="absolute bottom-28 left-0 right-0 px-6 z-30 flex flex-col items-center">
+        <div className="flex items-center gap-2 mb-2 max-w-xl w-full justify-start px-2">
+          <button onClick={() => handleSuggest('Schedule an event: ')} className="px-3 py-1 rounded-full bg-black/10 dark:bg-white/10 text-xs font-semibold uppercase tracking-wider hover:bg-black/20 dark:hover:bg-white/20 transition-colors backdrop-blur-md">Event</button>
+          <button onClick={() => handleSuggest('Add a task: ')} className="px-3 py-1 rounded-full bg-black/10 dark:bg-white/10 text-xs font-semibold uppercase tracking-wider hover:bg-black/20 dark:hover:bg-white/20 transition-colors backdrop-blur-md">Task</button>
+          <button onClick={() => handleSuggest('Take a note: ')} className="px-3 py-1 rounded-full bg-black/10 dark:bg-white/10 text-xs font-semibold uppercase tracking-wider hover:bg-black/20 dark:hover:bg-white/20 transition-colors backdrop-blur-md">Note</button>
+        </div>
+        <form onSubmit={handleSubmit} className="relative max-w-xl w-full mx-auto">
           <div className="flex items-center bg-[#1a1a1a]/90 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-[40px] p-2 shadow-2xl">
             <button 
               type="button"
