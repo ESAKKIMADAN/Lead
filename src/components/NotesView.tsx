@@ -220,7 +220,7 @@ export default function NotesView() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-32 select-none relative font-sans">
+    <div className="min-h-screen bg-background text-foreground pb-48 select-none relative font-sans">
       <div className="max-w-md mx-auto px-6 pt-12 space-y-8">
 
         {/* ── HEADER ── */}
@@ -266,23 +266,31 @@ export default function NotesView() {
 
         {/* ── NOTES GRID ── */}
         <div className="grid grid-cols-2 gap-4">
-          {filtered.length === 0 ? (
-            <div className="col-span-2 bg-black/5 dark:bg-white/5 rounded-[40px] p-12 text-center border border-white/5">
-              <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p className="text-lg font-medium text-black/70 dark:text-white/70">No notes here</p>
-              <p className="text-sm text-black/40 dark:text-white/40 mt-1">Tap + to add one</p>
-            </div>
-          ) : (
-            filtered.map(n => (
-              <NoteCard
-                key={n.id}
-                note={n}
-                onEdit={note => setEditingNote(note)}
-                onDelete={id => deleteNote(id)}
-                onPin={(id, p) => updateNote(id, { pinned: p })}
-              />
-            ))
-          )}
+          <AnimatePresence>
+            {filtered.length === 0 ? (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="col-span-2 bg-black/5 dark:bg-white/5 rounded-[40px] p-12 text-center border border-white/5"
+              >
+                <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                <p className="text-lg font-medium text-black/70 dark:text-white/70">No notes here</p>
+                <p className="text-sm text-black/40 dark:text-white/40 mt-1">Tap + to add one</p>
+              </motion.div>
+            ) : (
+              filtered.map(n => (
+                <NoteCard
+                  key={n.id}
+                  note={n}
+                  onEdit={note => setEditingNote(note)}
+                  onDelete={id => deleteNote(id)}
+                  onPin={(id, p) => updateNote(id, { pinned: p })}
+                />
+              ))
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

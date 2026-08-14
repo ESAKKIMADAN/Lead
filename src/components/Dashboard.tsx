@@ -221,7 +221,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen p-6 md:p-12 flex flex-col max-w-5xl mx-auto space-y-12 pb-32">
+    <div className="min-h-screen p-6 md:p-12 flex flex-col max-w-5xl mx-auto space-y-12 pb-48">
       <header className="flex flex-col md:flex-row md:justify-between md:items-center border-b border-border pb-6 mt-6 gap-6">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex-1 min-w-0">
           <h1 className="text-4xl md:text-5xl font-heading font-bold">{greeting}, {profile.name}</h1>

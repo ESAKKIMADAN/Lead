@@ -70,7 +70,7 @@ export default function TodoView() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-32 pt-12 select-none font-sans">
+    <div className="min-h-screen bg-background text-foreground pb-48 pt-12 select-none font-sans">
       <div className="max-w-md mx-auto px-6 space-y-8">
 
         {/* ── HEADER ── */}
