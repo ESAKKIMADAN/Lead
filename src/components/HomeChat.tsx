@@ -365,7 +365,7 @@ export default function HomeChat() {
     <div className="h-[100dvh] flex flex-col bg-background text-foreground overflow-hidden select-none font-sans relative group">
 
       {/* ── HEADER ── */}
-      <header className="px-6 py-8 flex items-center justify-between sticky top-0 z-40 bg-gradient-to-b from-black via-black/80 to-transparent">
+      <header className="px-6 py-8 flex items-center justify-between sticky top-0 z-40">
         <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-foreground">
           Lead
         </h1>
