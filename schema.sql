@@ -332,4 +332,12 @@ CREATE POLICY IF NOT EXISTS "Service role can update notification logs"
   ON public.notification_logs
   FOR UPDATE
   USING (true)
-  WITH CHECK (true);
+  WITH CHECK (true);
+
+-- ----------------------------------------------------
+-- MIGRATION: Add Psychology Profile to Egos
+-- Run these in Supabase SQL Editor if the table already exists.
+-- ----------------------------------------------------
+ALTER TABLE public.egos
+  ADD COLUMN IF NOT EXISTS psychology_profile JSONB,
+  ADD COLUMN IF NOT EXISTS tone_effectiveness JSONB;

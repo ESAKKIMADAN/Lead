@@ -3,7 +3,9 @@
 import { useSupabase } from '@/lib/SupabaseContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { Target, Zap, ArrowUp, Mic } from 'lucide-react';
+import { chatDb } from '@/lib/chatDb';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { Target, Zap, ArrowUp, Mic, Menu, Plus, MessageSquare, X } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -41,6 +43,25 @@ export default function HomeChat() {
 
   const [activeEgoId, setActiveEgoId] = useState<string | null>(null);
   const [hasTriggeredGreeting, setHasTriggeredGreeting] = useState(false);
+
+  const [currentChatId, setCurrentChatId] = useState<number | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const chatSessions = useLiveQuery(() => chatDb.chatSessions.orderBy('updated_at').reverse().toArray());
+
+  const loadChat = async (id: number) => {
+    const msgs = await chatDb.chatMessages.where('chat_id').equals(id).sortBy('timestamp');
+    setMessages(msgs.map(m => ({ role: m.role, content: m.content })));
+    setCurrentChatId(id);
+    setHistoryOpen(false);
+    setHasTriggeredGreeting(true);
+  };
+
+  const startNewChat = () => {
+    setCurrentChatId(null);
+    setMessages([]);
+    setHasTriggeredGreeting(false);
+    setHistoryOpen(false);
+  };
 
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -127,7 +148,7 @@ export default function HomeChat() {
   }, [ego?.id]);
 
   useEffect(() => {
-    if (profile && ego && messages.length === 0 && !hasTriggeredGreeting && !isLoading) {
+    if (profile && ego && messages.length === 0 && !hasTriggeredGreeting && !isLoading && currentChatId === null) {
       setHasTriggeredGreeting(true);
       const triggerGreeting = async () => {
         setIsLoading(true);
@@ -143,6 +164,7 @@ export default function HomeChat() {
                 goal: ego.goal,
                 reason: ego.reason,
                 category: ego.category,
+                psychology_profile: ego.psychology_profile,
               },
             }),
           });
@@ -210,6 +232,28 @@ export default function HomeChat() {
     const trimmed = text.trim();
     if (!trimmed || isLoading || !profile || !ego) return;
 
+    let activeChatId = currentChatId;
+    if (!activeChatId) {
+      const title = trimmed.length > 30 ? trimmed.substring(0, 30) + '...' : trimmed;
+      activeChatId = await chatDb.chatSessions.add({
+        title,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      setCurrentChatId(activeChatId);
+    } else {
+      await chatDb.chatSessions.update(activeChatId, {
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    await chatDb.chatMessages.add({
+      chat_id: activeChatId,
+      role: 'user',
+      content: trimmed,
+      timestamp: new Date().toISOString(),
+    });
+
     const userMsg: Message = { role: 'user', content: trimmed };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
@@ -228,6 +272,7 @@ export default function HomeChat() {
             goal: ego.goal,
             reason: ego.reason,
             category: ego.category,
+            psychology_profile: ego.psychology_profile,
           },
         }),
       });
@@ -267,7 +312,18 @@ export default function HomeChat() {
         }
       }
 
-      setMessages((prev) => [...prev, { role: 'assistant', content: fullText.replace(/\[ACTION:[\s\S]*?\]/g, '').trim() }]);
+      const finalAssistantContent = fullText.replace(/\[ACTION:[\s\S]*?\]/g, '').trim();
+
+      if (activeChatId) {
+        await chatDb.chatMessages.add({
+          chat_id: activeChatId,
+          role: 'assistant',
+          content: finalAssistantContent,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      setMessages((prev) => [...prev, { role: 'assistant', content: finalAssistantContent }]);
       setStreamingText('');
     } catch {
       setMessages((prev) => [
@@ -313,6 +369,12 @@ export default function HomeChat() {
         <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-foreground">
           Lead
         </h1>
+        <button
+          onClick={() => setHistoryOpen(true)}
+          className="w-12 h-12 rounded-full bg-white text-black border border-black/5 dark:border-transparent flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+        >
+          <MessageSquare className="w-6 h-6 stroke-[2.5]" />
+        </button>
       </header>
 
       {/* ── MESSAGES ── */}
@@ -436,6 +498,66 @@ export default function HomeChat() {
           </div>
         </form>
       </div>
+
+      {/* ── HISTORY SIDEBAR ── */}
+      <AnimatePresence>
+        {historyOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setHistoryOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-0 right-0 bottom-0 w-80 bg-[#111] z-50 flex flex-col border-l border-white/10 shadow-2xl"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <h3 className="font-semibold text-xl text-white">Chat History</h3>
+                <button onClick={() => setHistoryOpen(false)} className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-4">
+                <button
+                  onClick={startNewChat}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-white text-black rounded-[20px] font-semibold hover:bg-white/90 transition-colors"
+                >
+                  <Plus className="w-5 h-5" />
+                  New Chat
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {chatSessions && chatSessions.length === 0 && (
+                  <p className="text-center text-white/40 text-sm mt-10">No previous chats.</p>
+                )}
+                {chatSessions?.map(session => (
+                  <button
+                    key={session.id}
+                    onClick={() => loadChat(session.id!)}
+                    className={`w-full flex items-start gap-3 px-4 py-3 rounded-[20px] text-left transition-colors ${
+                      currentChatId === session.id ? 'bg-card-purple text-black' : 'hover:bg-white/5 text-white/80'
+                    }`}
+                  >
+                    <MessageSquare className={`w-5 h-5 flex-shrink-0 mt-0.5 ${currentChatId === session.id ? 'text-black/60' : 'text-white/40'}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate text-[15px]">{session.title}</p>
+                      <p className={`text-xs mt-0.5 ${currentChatId === session.id ? 'text-black/60' : 'text-white/40'}`}>
+                        {new Date(session.updated_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
     </div>
   );

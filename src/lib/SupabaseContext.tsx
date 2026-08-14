@@ -23,6 +23,8 @@ export interface Ego {
   reason: string;
   category: 'health' | 'career' | 'relationships' | 'finance' | 'mindset';
   active: boolean;
+  psychology_profile?: any;
+  tone_effectiveness?: any;
   created_at: string;
 }
 
@@ -80,7 +82,7 @@ interface SupabaseContextType {
   resetPin: (email: string) => Promise<boolean>;
   updatePin: (newPin: string) => Promise<boolean>;
   getEmailByUsername: (username: string) => Promise<string | null>;
-  createInitialData: (name: string, goals: { goal: string; reason: string }[]) => Promise<void>;
+  createInitialData: (name: string, goals: { goal: string; reason: string }[], psychology?: any) => Promise<void>;
   updateProfileName: (name: string) => Promise<void>;
   updateEgo: (id: string, updates: Partial<Ego>) => Promise<void>;
   addEgo: (goal: string, reason: string) => Promise<void>;
@@ -366,7 +368,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const createInitialData = async (name: string, goals: { goal: string; reason: string }[]) => {
+  const createInitialData = async (name: string, goals: { goal: string; reason: string }[], psychology?: any) => {
     if (!user) return;
     setLoading(true);
 
@@ -394,6 +396,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         goal: g.goal.trim(),
         reason: g.reason.trim(),
         category: 'mindset',
+        psychology_profile: psychology || null,
+        tone_effectiveness: { supportive: 50, tough_love: 50, direct: 50, challenge: 50 },
         active: idx === 0,
       }));
 
