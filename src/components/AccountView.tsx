@@ -139,10 +139,11 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
       // Silent non-blocking Web Push registration in the background
       try {
-        let registration = await navigator.serviceWorker.ready;
+        let registration = await navigator.serviceWorker.getRegistration();
         if (!registration) {
-          registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+          await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         }
+        registration = await navigator.serviceWorker.ready;
 
         const keyRes = await fetch('/api/push/vapid-key').catch(() => null);
         if (keyRes && keyRes.ok) {
@@ -204,7 +205,8 @@ export default function AccountView({ onBack }: AccountViewProps) {
     // 1. Direct System Popup Notification
     try {
       if ('serviceWorker' in navigator) {
-        const reg = await navigator.serviceWorker.ready;
+        let reg = await navigator.serviceWorker.getRegistration();
+        if (!reg) reg = await navigator.serviceWorker.ready;
         if (reg && reg.showNotification) {
           reg.showNotification(title, {
             body: notifBody,
