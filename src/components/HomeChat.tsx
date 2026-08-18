@@ -20,7 +20,11 @@ const QUICK_PROMPTS = [
 ];
 
 export default function HomeChat() {
-  const { profile, ego, tasks, addTask, addNote } = useSupabase();
+  const { profile, ego, tasks, addTask, addNote, updateEgo } = useSupabase();
+
+  const pendingTasks = tasks.filter(t => !t.completed).length;
+  const completedTasks = tasks.filter(t => t.completed).length;
+  const behavioralHistory = { pendingTasks, completedTasks };
 
   const todayStr = new Date().toDateString();
   const todayTasks = tasks ? tasks.filter(t => t.type === 'short_term').filter(task => {
@@ -165,10 +169,17 @@ export default function HomeChat() {
                 reason: ego.reason,
                 category: ego.category,
                 psychology_profile: ego.psychology_profile,
+                behavioralHistory,
               },
             }),
           });
           if (!res.ok || !res.body) throw new Error('API error');
+          
+          const usedTone = res.headers.get('X-Used-Tone');
+          if (usedTone && ego?.id) {
+            updateEgo(ego.id, { last_used_tone: usedTone });
+          }
+
           const reader = res.body.getReader();
           const decoder = new TextDecoder();
           let fullText = '';
@@ -273,11 +284,17 @@ export default function HomeChat() {
             reason: ego.reason,
             category: ego.category,
             psychology_profile: ego.psychology_profile,
+            behavioralHistory,
           },
         }),
       });
 
       if (!res.ok || !res.body) throw new Error('API error');
+
+      const usedTone = res.headers.get('X-Used-Tone');
+      if (usedTone && ego?.id) {
+        updateEgo(ego.id, { last_used_tone: usedTone });
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();

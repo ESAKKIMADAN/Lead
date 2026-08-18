@@ -25,6 +25,23 @@ export interface Ego {
   active: boolean;
   psychology_profile?: any;
   tone_effectiveness?: any;
+  last_used_tone?: string;
+  communication_profile?: {
+    directness: number;
+    energy: number;
+    emotional_support: number;
+    detail: number;
+    challenge: number;
+    humor: number;
+  };
+  last_used_communication?: {
+    directness: number;
+    energy: number;
+    emotional_support: number;
+    detail: number;
+    challenge: number;
+    humor: number;
+  };
   created_at: string;
 }
 
@@ -560,6 +577,50 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
       setTasks((prev) => prev.map((t) => (t.id === task.id ? data : t)));
+
+      // Learning Loop: Update effectiveness of the last used communication profile
+      if (nextCompleted && ego) {
+        let updates: Partial<Ego> = {};
+        
+        // Old tone logic
+        if (ego.last_used_tone) {
+          const currentScores = ego.tone_effectiveness || { supportive: 50, tough_love: 50, direct: 50, challenge: 50 };
+          const tone = ego.last_used_tone;
+          if (currentScores[tone] !== undefined) {
+            const newScore = Math.min(100, currentScores[tone] + 5);
+            updates.tone_effectiveness = { ...currentScores, [tone]: newScore };
+          }
+        }
+        
+        // New communication profile logic
+        if (ego.last_used_communication) {
+          const currentProfile = ego.communication_profile || {
+            directness: 0.5,
+            energy: 0.5,
+            emotional_support: 0.5,
+            detail: 0.5,
+            challenge: 0.5,
+            humor: 0.5
+          };
+          
+          const shiftRate = 0.2; // Move 20% towards the effective communication dimensions
+          
+          const newProfile = {
+            directness: currentProfile.directness * (1 - shiftRate) + ego.last_used_communication.directness * shiftRate,
+            energy: currentProfile.energy * (1 - shiftRate) + ego.last_used_communication.energy * shiftRate,
+            emotional_support: currentProfile.emotional_support * (1 - shiftRate) + ego.last_used_communication.emotional_support * shiftRate,
+            detail: currentProfile.detail * (1 - shiftRate) + ego.last_used_communication.detail * shiftRate,
+            challenge: currentProfile.challenge * (1 - shiftRate) + ego.last_used_communication.challenge * shiftRate,
+            humor: currentProfile.humor * (1 - shiftRate) + ego.last_used_communication.humor * shiftRate,
+          };
+          
+          updates.communication_profile = newProfile;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await updateEgo(ego.id, updates);
+        }
+      }
     } catch (err: any) {
       console.error('Error toggling task:', err.message);
     }

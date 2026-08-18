@@ -75,21 +75,11 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 export default function Home() {
   const { user, profile, loading, refreshData } = useSupabase();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
-  const [loaderColor, setLoaderColor] = useState('');
+  const [loaderColor, setLoaderColor] = useState('bg-black');
 
   useEffect(() => {
-    const colors = [
-      { cls: 'bg-card-mint', hex: '#B1D4CC' },
-      { cls: 'bg-card-orange', hex: '#EBA080' },
-      { cls: 'bg-card-yellow', hex: '#F4E07B' },
-      { cls: 'bg-card-cream', hex: '#F7EED2' },
-      { cls: 'bg-card-purple', hex: '#C8B9F0' }
-    ];
-    const picked = colors[Math.floor(Math.random() * colors.length)];
-    setLoaderColor(picked.cls);
-    
     const meta = document.getElementById('theme-color-meta');
-    if (meta) meta.setAttribute('content', picked.hex);
+    if (meta) meta.setAttribute('content', '#000000');
   }, []);
 
   useEffect(() => {
@@ -115,7 +105,7 @@ export default function Home() {
           <motion.svg 
             viewBox="0 0 100 100" 
             fill="currentColor"
-            className="w-16 h-16 text-black"
+            className="w-16 h-16 text-white"
             animate={{ opacity: [0.4, 1, 0.4] }}
             transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
           >

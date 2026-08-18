@@ -12,7 +12,7 @@ interface Message {
 }
 
 export default function ChatInterface({ profile, ego, onClose }: { profile: Profile, ego: Ego, onClose: () => void }) {
-  const { addTask, addNote } = useSupabase();
+  const { addTask, addNote, updateEgo } = useSupabase();
   const [messages, setMessages] = useState<Message[]>([]);
   const [localInput, setLocalInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -46,11 +46,21 @@ export default function ChatInterface({ profile, ego, onClose }: { profile: Prof
             goal: ego.goal,
             reason: ego.reason,
             category: ego.category,
+            communication_profile: ego.communication_profile,
+            psychology_profile: ego.psychology_profile,
           },
         }),
       });
 
       if (!res.ok || !res.body) throw new Error('API error');
+
+      const usedCommunicationStr = res.headers.get('X-Used-Communication');
+      if (usedCommunicationStr) {
+        try {
+          const usedCommunication = JSON.parse(usedCommunicationStr);
+          updateEgo(ego.id, { last_used_communication: usedCommunication });
+        } catch (e) {}
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
