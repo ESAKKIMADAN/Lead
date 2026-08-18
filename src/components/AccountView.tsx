@@ -222,17 +222,26 @@ export default function AccountView({ onBack }: AccountViewProps) {
     }
 
     // 2. Background Web Push API call
-    fetch('/api/push', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: profile?.id,
-        test: true,
-      }),
-    }).catch(() => null);
-
-    setPushStatus('success');
-    setPushMessage(`Sent: "${title}" — Check your OS system alerts!`);
+    try {
+      const res = await fetch('/api/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: profile?.id,
+          test: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || data.message || 'Push API failed');
+      }
+      setPushStatus('success');
+      setPushMessage(`Sent: "${title}" — Check your OS system alerts!`);
+    } catch (pushErr: any) {
+      console.error('Push API error:', pushErr);
+      setPushStatus('error');
+      setPushMessage('Failed to send push: ' + pushErr.message);
+    }
     setSaving(false);
   };
 
@@ -636,8 +645,13 @@ export default function AccountView({ onBack }: AccountViewProps) {
                     </button>
                   )}
 
-                  {/* Status message removed per request */}
-
+                  {pushMessage && (
+                    <div className={`rounded-2xl px-4 py-3 text-sm ${
+                      pushStatus === 'error' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-card-mint/10 text-card-mint border border-card-mint/20'
+                    }`}>
+                      {pushMessage}
+                    </div>
+                  )}
                   {/* Test notification button */}
                   <button
                     onClick={handleTestPush}
