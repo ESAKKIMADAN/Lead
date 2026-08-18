@@ -17,7 +17,16 @@ const WEEKDAYS = [
 
 function getTasksForDate(tasks: any[], date: Date) {
   const dateStr = date.toDateString();
-  return tasks.filter(t => t.type === 'short_term' || t.type === 'daily').filter(task => {
+  return tasks.filter(t => {
+    if (t.type === 'short_term' || t.type === 'daily') return true;
+    if (t.type === 'event') {
+      const lower = (t.title || '').toLowerCase();
+      if (lower.includes('meeting') || lower.includes('call') || lower.includes('appointment') || lower.includes('trip') || lower.includes('interview')) {
+        return true;
+      }
+    }
+    return false;
+  }).filter(task => {
     if (task.type === 'daily') return true;
     const d = task.target_date
       ? new Date(task.target_date).toDateString()

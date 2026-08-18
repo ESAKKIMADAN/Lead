@@ -93,11 +93,12 @@ ACTIONS:
 You MUST append a hidden command to your response if the user asks you to:
 1. Schedule an EVENT (e.g. "it's my birthday", "schedule a meeting") -> append [ACTION:TASK|Title|event|HH:MM|YYYY-MM-DD]
    - Use 'event' for anything related to dates, calendars, or events (like birthdays, meetings).
-2. Add a TASK to the todolist (e.g. "remind me to buy groceries", "create a task") -> append [ACTION:TASK|Title|short_term|HH:MM|YYYY-MM-DD]
-   - Use 'short_term' for tasks and todos.
+2. Add a TASK to the todolist (e.g. "I need to read a book", "remind me to...", "add to my todo list") -> append [ACTION:TASK|Title|short_term|HH:MM|YYYY-MM-DD]
+   - Use 'short_term' for any actionable tasks, to-dos, or single actions. Do NOT use NOTE for actionable tasks.
 3. Add a RECURRING DAILY TASK (e.g. "I need to read every day", "daily habit") -> append [ACTION:TASK|Title|daily|HH:MM|YYYY-MM-DD]
    - Use 'daily' for habits or tasks that repeat every day.
-4. Take a NOTE (e.g. "take a note", "save this thought") -> append [ACTION:NOTE|Title|Content of Note|mint]
+4. Take a NOTE (e.g. "study notes", "grocery list", "food list", "diary entry", "save this thought") -> append [ACTION:NOTE|Title|Content of Note|mint]
+   - Use 'NOTE' ONLY for passive information, lists, journaling, or reference material. Do NOT use NOTE for actionable tasks.
    - 'HH:MM' (24h format, leave empty if none) and 'YYYY-MM-DD' (Target date, calculate based on Current Date).
 
 Example 1: "Added to your calendar. [ACTION:TASK|Birthday|event||2026-08-09]"
