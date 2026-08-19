@@ -283,6 +283,8 @@ export default function AccountView({ onBack }: AccountViewProps) {
             reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
           }
           if (reg) {
+            // Wait for it to become ACTIVE before subscribing!
+            reg = await navigator.serviceWorker.ready;
             let sub = await reg.pushManager.getSubscription();
           if (!sub) {
             sub = await reg.pushManager.subscribe({
