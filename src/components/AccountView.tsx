@@ -22,7 +22,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
   const [editReason, setEditReason] = useState('');
   const [newPin, setNewPin] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saving, setSaving] = useState(false);
+
   const [isNewGoal, setIsNewGoal] = useState(false);
 
   const [isDarkMode, setIsDarkMode] = useState(true);
