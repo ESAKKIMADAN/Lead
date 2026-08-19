@@ -274,44 +274,77 @@ export default function AccountView({ onBack }: AccountViewProps) {
       
       // If no subscription found, actively attempt to repair it!
       if (res.status === 404 && 'serviceWorker' in navigator) {
-        setPushMessage('Repairing subscription...');
-        const keyRes = await fetch('/api/push/vapid-key').catch(() => null);
-        if (keyRes && keyRes.ok) {
+        setPushMessage('Repairing subscription (this may take a few seconds)...');
+        
+        const repairPromise = async () => {
+          const keyRes = await fetch('/api/push/vapid-key');
+          if (!keyRes.ok) throw new Error('Failed to fetch VAPID key');
           const keyData = await keyRes.json();
+          
           let reg = await navigator.serviceWorker.getRegistration('/');
           if (!reg) {
             reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
           }
-          if (reg) {
-            // Wait for it to become ACTIVE before subscribing!
-            reg = await navigator.serviceWorker.ready;
-            let sub = await reg.pushManager.getSubscription();
+          if (!reg) throw new Error('Failed to register Service Worker');
+
+          // Wait until the SW is active (with timeout)
+          if (!reg.active) {
+            await new Promise<void>((resolve, reject) => {
+              const timeout = setTimeout(() => reject(new Error('Service Worker activation timed out')), 5000);
+              const worker = reg?.installing || reg?.waiting;
+              if (worker) {
+                worker.addEventListener('statechange', () => {
+                  if (worker.state === 'activated') {
+                    clearTimeout(timeout);
+                    resolve();
+                  }
+                });
+              } else {
+                clearTimeout(timeout);
+                reject(new Error('No worker found to activate'));
+              }
+            });
+          }
+
+          let sub = await reg.pushManager.getSubscription();
           if (!sub) {
             sub = await reg.pushManager.subscribe({
               userVisibleOnly: true,
               applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
             });
           }
-          if (sub) {
-            const subJSON = sub.toJSON();
-            await fetch('/api/push/subscribe', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                user_id: profile?.id,
-                endpoint: subJSON.endpoint,
-                p256dh: subJSON.keys?.p256dh,
-                auth: subJSON.keys?.auth,
-              }),
-            });
-            // Try sending the push one more time after repairing!
-            res = await fetch('/api/push', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ user_id: profile?.id, test: true }),
-            });
-          }
-          }
+          
+          if (!sub) throw new Error('Push subscription failed');
+
+          const subJSON = sub.toJSON();
+          const subRes = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: profile?.id,
+              endpoint: subJSON.endpoint,
+              p256dh: subJSON.keys?.p256dh,
+              auth: subJSON.keys?.auth,
+            }),
+          });
+          if (!subRes.ok) throw new Error('Failed to save subscription to database');
+
+          // Try sending the push one more time after repairing!
+          res = await fetch('/api/push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: profile?.id, test: true }),
+          });
+        };
+
+        try {
+          // Race the repair logic against a 10 second timeout
+          await Promise.race([
+            repairPromise(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Repair process completely timed out')), 10000))
+          ]);
+        } catch (repairErr: any) {
+          throw new Error(`Repair failed: ${repairErr.message}`);
         }
       }
 
