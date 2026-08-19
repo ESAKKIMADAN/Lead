@@ -261,14 +261,48 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
     // 2. Background Web Push API call
     try {
-      const res = await fetch('/api/push', {
+      let res = await fetch('/api/push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: profile?.id,
-          test: true,
-        }),
+        body: JSON.stringify({ user_id: profile?.id, test: true }),
       });
+      
+      // If no subscription found, actively attempt to repair it!
+      if (res.status === 404 && 'serviceWorker' in navigator) {
+        setPushMessage('Repairing subscription...');
+        const keyRes = await fetch('/api/push/vapid-key').catch(() => null);
+        if (keyRes && keyRes.ok) {
+          const keyData = await keyRes.json();
+          const reg = await navigator.serviceWorker.ready;
+          let sub = await reg.pushManager.getSubscription();
+          if (!sub) {
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
+            });
+          }
+          if (sub) {
+            const subJSON = sub.toJSON();
+            await fetch('/api/push/subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: profile?.id,
+                endpoint: subJSON.endpoint,
+                p256dh: subJSON.keys?.p256dh,
+                auth: subJSON.keys?.auth,
+              }),
+            });
+            // Try sending the push one more time after repairing!
+            res = await fetch('/api/push', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: profile?.id, test: true }),
+            });
+          }
+        }
+      }
+
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || data.message || 'Push API failed');
