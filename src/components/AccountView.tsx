@@ -62,8 +62,13 @@ export default function AccountView({ onBack }: AccountViewProps) {
   // Auto-heal push subscriptions on load if permission was already granted
   useEffect(() => {
     if (permissionState === 'granted' && profile?.id && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(async (registration) => {
+      (async () => {
         try {
+          let registration = await navigator.serviceWorker.getRegistration('/');
+          if (!registration) {
+            registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+          }
+          if (!registration) return;
           const keyRes = await fetch('/api/push/vapid-key').catch(() => null);
           if (keyRes && keyRes.ok) {
             const keyData = await keyRes.json();
@@ -93,7 +98,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
         } catch (err) {
           console.warn('Background push auto-heal failed:', err);
         }
-      });
+      })();
     }
   }, [permissionState, profile?.id]);
 
@@ -273,8 +278,12 @@ export default function AccountView({ onBack }: AccountViewProps) {
         const keyRes = await fetch('/api/push/vapid-key').catch(() => null);
         if (keyRes && keyRes.ok) {
           const keyData = await keyRes.json();
-          const reg = await navigator.serviceWorker.ready;
-          let sub = await reg.pushManager.getSubscription();
+          let reg = await navigator.serviceWorker.getRegistration('/');
+          if (!reg) {
+            reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+          }
+          if (reg) {
+            let sub = await reg.pushManager.getSubscription();
           if (!sub) {
             sub = await reg.pushManager.subscribe({
               userVisibleOnly: true,
@@ -299,6 +308,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ user_id: profile?.id, test: true }),
             });
+          }
           }
         }
       }
