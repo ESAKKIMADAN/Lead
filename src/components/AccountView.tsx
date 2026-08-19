@@ -22,15 +22,8 @@ export default function AccountView({ onBack }: AccountViewProps) {
   const [editReason, setEditReason] = useState('');
   const [newPin, setNewPin] = useState('');
   const [saving, setSaving] = useState(false);
-  const [enablingPush, setEnablingPush] = useState(false);
-  const [pushStatus, setPushStatus] = useState<'idle' | 'success' | 'error' | 'no_sub'>('idle');
-  const [pushMessage, setPushMessage] = useState('');
+  const [saving, setSaving] = useState(false);
   const [isNewGoal, setIsNewGoal] = useState(false);
-
-  const hasNotificationSupport = typeof window !== 'undefined' && 'Notification' in window;
-  const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>(
-    hasNotificationSupport ? Notification.permission : 'unsupported'
-  );
 
   const [isDarkMode, setIsDarkMode] = useState(true);
 
@@ -59,48 +52,6 @@ export default function AccountView({ onBack }: AccountViewProps) {
     }
   }, [profile, ego, isNewGoal]);
 
-  // Auto-heal push subscriptions on load if permission was already granted
-  useEffect(() => {
-    if (permissionState === 'granted' && profile?.id && 'serviceWorker' in navigator) {
-      (async () => {
-        try {
-          let registration = await navigator.serviceWorker.getRegistration('/');
-          if (!registration) {
-            registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-          }
-          if (!registration) return;
-          const keyRes = await fetch('/api/push/vapid-key').catch(() => null);
-          if (keyRes && keyRes.ok) {
-            const keyData = await keyRes.json();
-            if (keyData.publicKey) {
-              let subscription = await registration.pushManager.getSubscription();
-              if (!subscription) {
-                subscription = await registration.pushManager.subscribe({
-                  userVisibleOnly: true,
-                  applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
-                });
-              }
-              if (subscription) {
-                const subJSON = subscription.toJSON();
-                await fetch('/api/push/subscribe', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    user_id: profile.id,
-                    endpoint: subJSON.endpoint,
-                    p256dh: subJSON.keys?.p256dh,
-                    auth: subJSON.keys?.auth,
-                  }),
-                }).catch(() => null);
-              }
-            }
-          }
-        } catch (err) {
-          console.warn('Background push auto-heal failed:', err);
-        }
-      })();
-    }
-  }, [permissionState, profile?.id]);
 
   if (!profile || !ego) {
     return (
@@ -146,221 +97,6 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
   const urlBase64ToUint8Array = (base64String: string) => {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-      .replace(/\-/g, '+')
-      .replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  };
-
-  const requestNotificationPermission = async () => {
-    if (!hasNotificationSupport) {
-      setPushStatus('error');
-      setPushMessage('This browser does not support notifications.');
-      return;
-    }
-
-    setEnablingPush(true);
-    setPushStatus('idle');
-    setPushMessage('');
-
-    try {
-      const result = await Notification.requestPermission();
-      setPermissionState(result);
-
-      if (result === 'denied') {
-        setPushStatus('error');
-        setPushMessage('Permission denied. Go to browser Settings → Notifications → Allow for this site.');
-        return;
-      }
-
-      if (result !== 'granted') return;
-
-      // Silent non-blocking Web Push registration in the background
-      try {
-        let registration = await navigator.serviceWorker.getRegistration('/');
-        if (!registration) {
-          registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        }
-
-        const keyRes = await fetch('/api/push/vapid-key').catch(() => null);
-        if (keyRes && keyRes.ok) {
-          const keyData = await keyRes.json();
-          if (keyData.publicKey && registration) {
-            const subscription = await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
-            }).catch(() => null);
-
-            if (subscription) {
-              const subJSON = subscription.toJSON();
-              await fetch('/api/push/subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  user_id: profile?.id,
-                  endpoint: subJSON.endpoint,
-                  p256dh: subJSON.keys?.p256dh,
-                  auth: subJSON.keys?.auth,
-                }),
-              }).catch(() => null);
-            }
-          }
-        }
-      } catch (bgErr) {
-        console.warn('[Push] Background registration notice:', bgErr);
-      }
-
-      setPushStatus('success');
-      setPushMessage('Notifications Active! System alerts are ready.');
-    } catch (error: any) {
-      setPushStatus('error');
-      setPushMessage('Error: ' + (error?.message || 'unknown'));
-    } finally {
-      setEnablingPush(false);
-    }
-  };
-
-  const handleTestPush = async () => {
-    setSaving(true);
-    setPushStatus('idle');
-    setPushMessage('');
-
-    let title = 'LEAD Motivation';
-    let notifBody = 'Success is built through daily small wins. Stay focused!';
-
-    try {
-      // Pick notification from Supabase logs or fallback
-      if (logs && logs.length > 0) {
-        const pick = logs[Math.floor(Math.random() * logs.length)];
-        title = pick.notification_title || title;
-        notifBody = pick.notification_body || notifBody;
-      }
-    } catch (err) {
-      console.warn('Error picking log:', err);
-    }
-
-    // 1. Direct System Popup Notification
-    try {
-      if ('serviceWorker' in navigator) {
-        let reg = await navigator.serviceWorker.getRegistration('/');
-        if (reg && reg.showNotification) {
-          reg.showNotification(title, {
-            body: notifBody,
-            icon: '/logo.png',
-            badge: '/logo-white.png',
-          });
-        } else if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification(title, { body: notifBody, icon: '/logo.png' });
-        }
-      } else if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(title, { body: notifBody, icon: '/logo.png' });
-      }
-    } catch (directErr) {
-      console.error('Direct notification error:', directErr);
-    }
-
-    // 2. Background Web Push API call
-    try {
-      let res = await fetch('/api/push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: profile?.id, test: true }),
-      });
-      
-      // If no subscription found, actively attempt to repair it!
-      if (res.status === 404 && 'serviceWorker' in navigator) {
-        setPushMessage('Repairing subscription (this may take a few seconds)...');
-        
-        const repairPromise = async () => {
-          const keyRes = await fetch('/api/push/vapid-key');
-          if (!keyRes.ok) throw new Error('Failed to fetch VAPID key');
-          const keyData = await keyRes.json();
-          
-          let reg = await navigator.serviceWorker.getRegistration('/');
-          if (!reg) {
-            reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-          }
-          if (!reg) throw new Error('Failed to register Service Worker');
-
-          // Wait until the SW is active (with timeout)
-          if (!reg.active) {
-            await new Promise<void>((resolve, reject) => {
-              const timeout = setTimeout(() => reject(new Error('Service Worker activation timed out')), 5000);
-              const worker = reg?.installing || reg?.waiting;
-              if (worker) {
-                worker.addEventListener('statechange', () => {
-                  if (worker.state === 'activated') {
-                    clearTimeout(timeout);
-                    resolve();
-                  }
-                });
-              } else {
-                clearTimeout(timeout);
-                reject(new Error('No worker found to activate'));
-              }
-            });
-          }
-
-          let sub = await reg.pushManager.getSubscription();
-          if (!sub) {
-            sub = await reg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
-            });
-          }
-          
-          if (!sub) throw new Error('Push subscription failed');
-
-          const subJSON = sub.toJSON();
-          const subRes = await fetch('/api/push/subscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              user_id: profile?.id,
-              endpoint: subJSON.endpoint,
-              p256dh: subJSON.keys?.p256dh,
-              auth: subJSON.keys?.auth,
-            }),
-          });
-          if (!subRes.ok) throw new Error('Failed to save subscription to database');
-
-          // Try sending the push one more time after repairing!
-          res = await fetch('/api/push', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: profile?.id, test: true }),
-          });
-        };
-
-        try {
-          // Race the repair logic against a 10 second timeout
-          await Promise.race([
-            repairPromise(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Repair process completely timed out')), 10000))
-          ]);
-        } catch (repairErr: any) {
-          throw new Error(`Repair failed: ${repairErr.message}`);
-        }
-      }
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || data.message || 'Push API failed');
-      }
-      setPushStatus('success');
-      setPushMessage(`Sent: "${title}" — Check your OS system alerts!`);
-    } catch (pushErr: any) {
-      console.error('Push API error:', pushErr);
-      setPushStatus('error');
-      setPushMessage('Failed to send push: ' + pushErr.message);
-    }
-    setSaving(false);
-  };
 
 
   const handleReset = async () => {
@@ -729,58 +465,24 @@ export default function AccountView({ onBack }: AccountViewProps) {
                   <p className="text-sm font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest pl-2">Notifications</p>
                 </div>
 
-                {/* ── Status & Buttons ── */}
-                <div className="flex flex-col gap-3 w-full">
-                  {permissionState === 'denied' ? (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 text-red-400 text-sm">
-                      ✗ Notifications blocked by browser.<br/>
-                      <span className="text-xs text-red-300">Allow notifications in your browser site settings.</span>
-                    </div>
-                  ) : permissionState === 'granted' ? (
-                    <div className="flex items-center justify-between bg-card-mint/10 border border-card-mint/20 rounded-3xl px-5 py-4">
-                      <div className="flex items-center gap-3 text-card-mint font-bold text-sm">
-                        <Check className="w-5 h-5 stroke-[3]" /> Notifications Active
-                      </div>
-                      <span className="text-[10px] uppercase tracking-wider bg-card-mint text-black font-bold px-3 py-1 rounded-full">
-                        Ready
-                      </span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={requestNotificationPermission}
-                      disabled={enablingPush}
-                      className="bg-card-orange text-black px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full flex items-center justify-center gap-2 disabled:opacity-70 transition-all active:scale-95 shadow-md"
-                    >
-                      {enablingPush ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                          Enabling...
-                        </>
-                      ) : (
-                        'Enable Notifications'
-                      )}
-                    </button>
-                  )}
-
-                  {pushMessage && (
-                    <div className={`rounded-2xl px-4 py-3 text-sm ${
-                      pushStatus === 'error' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-card-mint/10 text-card-mint border border-card-mint/20'
-                    }`}>
-                      {pushMessage}
-                    </div>
-                  )}
-                  {/* Test notification button */}
-                  <button
-                    onClick={handleTestPush}
-                    disabled={saving}
-                    className="bg-black/10 dark:bg-white/10 text-foreground px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full hover:bg-black/20 dark:hover:bg-black/20 dark:bg-white/20 transition-all disabled:opacity-50 active:scale-95"
+                <div className="flex flex-col gap-4 w-full">
+                  <p className="text-sm text-foreground/70 px-2 leading-relaxed">
+                    Browser notifications can be unreliable. Instead, you can add an hourly reminder directly to your native OS calendar (Apple, Google, Windows). 
+                    It is 100% reliable and works offline!
+                  </p>
+                  
+                  <a
+                    href={`webcal://${typeof window !== 'undefined' ? window.location.host : ''}/api/calendar?user=${profile?.id}`}
+                    className="bg-card-orange text-black px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full flex items-center justify-center gap-2 hover:brightness-95 transition-all active:scale-95 shadow-md"
                   >
-                    {saving ? 'Sending...' : 'Send Test Notification'}
-                  </button>
-
+                    <Bell className="w-5 h-5 stroke-[2.5]" />
+                    Subscribe to Reminders
+                  </a>
+                  
+                  <p className="text-xs text-foreground/50 px-2 text-center">
+                    Clicking this will automatically open your default calendar app.
+                  </p>
                 </div>
-
-
 
               </div>
             </motion.div>
