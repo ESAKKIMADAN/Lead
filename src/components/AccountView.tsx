@@ -59,6 +59,44 @@ export default function AccountView({ onBack }: AccountViewProps) {
     }
   }, [profile, ego, isNewGoal]);
 
+  // Auto-heal push subscriptions on load if permission was already granted
+  useEffect(() => {
+    if (permissionState === 'granted' && profile?.id && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(async (registration) => {
+        try {
+          const keyRes = await fetch('/api/push/vapid-key').catch(() => null);
+          if (keyRes && keyRes.ok) {
+            const keyData = await keyRes.json();
+            if (keyData.publicKey) {
+              let subscription = await registration.pushManager.getSubscription();
+              if (!subscription) {
+                subscription = await registration.pushManager.subscribe({
+                  userVisibleOnly: true,
+                  applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
+                });
+              }
+              if (subscription) {
+                const subJSON = subscription.toJSON();
+                await fetch('/api/push/subscribe', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    user_id: profile.id,
+                    endpoint: subJSON.endpoint,
+                    p256dh: subJSON.keys?.p256dh,
+                    auth: subJSON.keys?.auth,
+                  }),
+                }).catch(() => null);
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('Background push auto-heal failed:', err);
+        }
+      });
+    }
+  }, [permissionState, profile?.id]);
+
   if (!profile || !ego) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
