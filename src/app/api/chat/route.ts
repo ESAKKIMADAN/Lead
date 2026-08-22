@@ -108,7 +108,7 @@ Example 4: "Note saved. [ACTION:NOTE|My Idea|Need to build a cool app|mint]"
 Always provide a brief verbal confirmation in your text alongside the hidden command.`;
 
     const result = await streamText({
-      model: groq('moonshotai/kimi-k2-instruct'),
+      model: groq('openai/gpt-oss-120b'),
       system: systemPrompt,
       messages: chatMessages,
     });
