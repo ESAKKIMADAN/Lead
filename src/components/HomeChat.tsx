@@ -561,7 +561,6 @@ export default function HomeChat() {
                       currentChatId === session.id ? 'bg-card-purple text-black' : 'hover:bg-white/5 text-white/80'
                     }`}
                   >
-                    <MessageSquare className={`w-5 h-5 flex-shrink-0 mt-0.5 ${currentChatId === session.id ? 'text-black/60' : 'text-white/40'}`} />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate text-[15px]">{session.title}</p>
                       <p className={`text-xs mt-0.5 ${currentChatId === session.id ? 'text-black/60' : 'text-white/40'}`}>
