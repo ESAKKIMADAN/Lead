@@ -388,9 +388,9 @@ export default function HomeChat() {
         </h1>
         <button
           onClick={() => setHistoryOpen(true)}
-          className="w-12 h-12 rounded-full bg-white text-black border border-black/5 dark:border-transparent flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+          className="w-12 h-12 rounded-[18px] bg-white/10 backdrop-blur-2xl border border-white/10 text-white/80 flex items-center justify-center hover:bg-white/18 hover:border-white/20 hover:text-white active:scale-95 transition-all shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
         >
-          <MessageSquare className="w-6 h-6 stroke-[2.5]" />
+          <MessageSquare className="w-5 h-5 stroke-[2]" />
         </button>
       </header>
 
