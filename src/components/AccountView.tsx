@@ -107,7 +107,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-48 pt-12 select-none font-sans">
-      <div className="max-w-md mx-auto px-6 space-y-8">
+      <div className="max-w-md lg:max-w-3xl mx-auto px-6 space-y-8">
 
         {/* ── HEADER ── */}
         <div className="flex justify-between items-start">

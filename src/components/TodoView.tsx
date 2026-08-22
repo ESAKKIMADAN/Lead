@@ -80,10 +80,10 @@ export default function TodoView() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-48 pt-12 select-none font-sans">
-      <div className="max-w-md mx-auto px-6 space-y-8">
+      <div className="max-w-md lg:max-w-5xl mx-auto px-6">
 
         {/* ── HEADER ── */}
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start mb-6">
           <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-foreground">
             My<br/>Tasks
           </h1>
@@ -96,7 +96,7 @@ export default function TodoView() {
         </div>
 
         {/* ── TABS ── */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 -mx-6 px-6 no-scrollbar">
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 -mx-6 px-6 no-scrollbar mb-8">
           <button
             onClick={() => { setActiveTab('daily'); setActiveDateOffset(0); }}
             className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
@@ -115,108 +115,110 @@ export default function TodoView() {
           </button>
         </div>
 
-        {/* ── SUMMARY CARDS (Pastel layout) ── */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-card-orange text-black rounded-[40px] p-6 flex flex-col justify-between shadow-sm min-h-[180px]">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium opacity-80">Streak</span>
-                <Flame className="w-5 h-5 opacity-50" />
-              </div>
-              <p className="text-4xl font-medium">{streakDays} <span className="text-lg opacity-70">Days</span></p>
-            </div>
-            <div className="w-full bg-black/10 rounded-full h-1 mt-4">
-              <div className="bg-black h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-            </div>
-          </div>
+        {/* ── DESKTOP 2-COL / MOBILE STACK ── */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-10 lg:items-start">
 
-          <div className="bg-card-cream text-black rounded-[40px] p-6 flex flex-col justify-between shadow-sm min-h-[180px]">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium opacity-80">Focus</span>
-                <Zap className="w-5 h-5 opacity-50" />
-              </div>
-              <p className="font-medium text-lg leading-tight line-clamp-3">{ego.goal}</p>
-            </div>
-            <span className="text-xs font-semibold uppercase tracking-widest opacity-60 bg-black/5 px-3 py-1.5 rounded-full self-start">Active</span>
-          </div>
-        </div>
+          {/* LEFT: Stats + Weekday */}
+          <div className="space-y-6 mb-8 lg:mb-0">
 
-        {/* ── WEEKDAY ROW (Simplified) ── */}
-        <div className="bg-white dark:bg-[#151515] rounded-[32px] p-5 border border-black/5 dark:border-white/5 flex justify-between items-center shadow-sm dark:shadow-none">
-          {WEEKDAYS.map(({ day, key }) => {
-            const isToday = key === todayDayIdx;
-            
-            // Map JS getDay() (Sun=0) to Monday-start index (Mon=0...Sun=6)
-            const todayMonIdx = todayDayIdx === 0 ? 6 : todayDayIdx - 1;
-            const cellMonIdx = key === 0 ? 6 : key - 1;
-            const isPast = cellMonIdx < todayMonIdx;
-
-            return (
-              <div key={day+key} className="flex flex-col items-center gap-1.5">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  isToday ? 'bg-card-yellow text-black shadow-sm dark:shadow-none' : isPast ? 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50' : 'bg-transparent text-black/30 dark:text-white/30'
-                }`}>
-                  {day}
+            {/* Summary cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-card-orange text-black rounded-[40px] p-6 flex flex-col justify-between shadow-sm min-h-[180px]">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium opacity-80">Streak</span>
+                    <Flame className="w-5 h-5 opacity-50" />
+                  </div>
+                  <p className="text-4xl font-medium">{streakDays} <span className="text-lg opacity-70">Days</span></p>
+                </div>
+                <div className="w-full bg-black/10 rounded-full h-1 mt-4">
+                  <div className="bg-black h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                 </div>
               </div>
-            );
-          })}
-        </div>
-
-        {/* ── TASKS LIST ── */}
-        <div className="space-y-3">
-          <AnimatePresence initial={false}>
-            {dayTasks.length === 0 ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-[40px] p-12 text-center shadow-sm dark:shadow-none">
-                <CalendarDays className="w-12 h-12 mx-auto mb-4 opacity-20 text-foreground" />
-                <p className="text-lg font-medium text-black/70 dark:text-white/70">All clear</p>
-                <p className="text-sm text-black/40 dark:text-white/40 mt-1">Tap + to add a task</p>
-              </motion.div>
-            ) : (
-              dayTasks.map((task, i) => (
-                <motion.div
-                  key={task.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className={`p-5 rounded-[32px] flex flex-col justify-center transition-all min-h-[96px] relative overflow-hidden shadow-sm dark:shadow-none ${
-                    task.completed ? 'bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 opacity-60' : 'bg-card-mint text-black border border-black/5 dark:border-transparent'
-                  }`}
-                >
-                  <div className="flex items-center gap-4 relative z-10">
-                    <button onClick={() => toggleTask(task)} className="flex-shrink-0">
-                      {task.completed ? (
-                        <CheckCircle2 className="w-7 h-7 text-black/40 dark:text-white/40" />
-                      ) : (
-                        <Circle className="w-7 h-7 text-black/30 hover:text-black/60 transition-colors" />
-                      )}
-                    </button>
-                    
-                    <div className="flex-1 min-w-0 pr-4">
-                      <p className={`text-lg font-medium leading-tight truncate ${task.completed ? 'line-through text-black/60 dark:text-white/60' : 'text-black'}`}>
-                        {task.title}
-                      </p>
-                      <p className={`text-sm mt-0.5 font-medium ${task.completed ? 'text-black/40 dark:text-white/40' : 'text-black/50'}`}>
-                        {task.scheduled_time || 'Anytime'}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => deleteTask(task.id)}
-                      className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
-                        task.completed ? 'hover:bg-black/10 dark:hover:bg-white/10 text-black/40 dark:text-white/40' : 'hover:bg-black/10 text-black/40'
-                      }`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+              <div className="bg-card-cream text-black rounded-[40px] p-6 flex flex-col justify-between shadow-sm min-h-[180px]">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium opacity-80">Focus</span>
+                    <Zap className="w-5 h-5 opacity-50" />
                   </div>
-                </motion.div>
-              ))
-            )}
-          </AnimatePresence>
-        </div>
+                  <p className="font-medium text-lg leading-tight line-clamp-3">{ego.goal}</p>
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-widest opacity-60 bg-black/5 px-3 py-1.5 rounded-full self-start">Active</span>
+              </div>
+            </div>
 
+            {/* Weekday row */}
+            <div className="bg-white dark:bg-[#151515] rounded-[32px] p-5 border border-black/5 dark:border-white/5 flex justify-between items-center shadow-sm dark:shadow-none">
+              {WEEKDAYS.map(({ day, key }) => {
+                const isToday = key === todayDayIdx;
+                const todayMonIdx = todayDayIdx === 0 ? 6 : todayDayIdx - 1;
+                const cellMonIdx = key === 0 ? 6 : key - 1;
+                const isPast = cellMonIdx < todayMonIdx;
+                return (
+                  <div key={day+key} className="flex flex-col items-center gap-1.5">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      isToday ? 'bg-card-yellow text-black shadow-sm dark:shadow-none' : isPast ? 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50' : 'bg-transparent text-black/30 dark:text-white/30'
+                    }`}>
+                      {day}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* RIGHT: Task list */}
+          <div className="space-y-3">
+            <AnimatePresence initial={false}>
+              {dayTasks.length === 0 ? (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-[40px] p-12 text-center shadow-sm dark:shadow-none">
+                  <CalendarDays className="w-12 h-12 mx-auto mb-4 opacity-20 text-foreground" />
+                  <p className="text-lg font-medium text-black/70 dark:text-white/70">All clear</p>
+                  <p className="text-sm text-black/40 dark:text-white/40 mt-1">Tap + to add a task</p>
+                </motion.div>
+              ) : (
+                dayTasks.map((task) => (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className={`p-5 rounded-[32px] flex flex-col justify-center transition-all min-h-[96px] relative overflow-hidden shadow-sm dark:shadow-none ${
+                      task.completed ? 'bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 opacity-60' : 'bg-card-mint text-black border border-black/5 dark:border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4 relative z-10">
+                      <button onClick={() => toggleTask(task)} className="flex-shrink-0">
+                        {task.completed ? (
+                          <CheckCircle2 className="w-7 h-7 text-black/40 dark:text-white/40" />
+                        ) : (
+                          <Circle className="w-7 h-7 text-black/30 hover:text-black/60 transition-colors" />
+                        )}
+                      </button>
+                      <div className="flex-1 min-w-0 pr-4">
+                        <p className={`text-lg font-medium leading-tight truncate ${task.completed ? 'line-through text-black/60 dark:text-white/60' : 'text-black'}`}>
+                          {task.title}
+                        </p>
+                        <p className={`text-sm mt-0.5 font-medium ${task.completed ? 'text-black/40 dark:text-white/40' : 'text-black/50'}`}>
+                          {task.scheduled_time || 'Anytime'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => deleteTask(task.id)}
+                        className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
+                          task.completed ? 'hover:bg-black/10 dark:hover:bg-white/10 text-black/40 dark:text-white/40' : 'hover:bg-black/10 text-black/40'
+                        }`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </AnimatePresence>
+          </div>
+
+        </div>
       </div>
 
 

@@ -76,10 +76,10 @@ export default function CalendarView() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-48 pt-12 select-none font-sans">
-      <div className="max-w-md mx-auto px-6 space-y-8">
+      <div className="max-w-md lg:max-w-5xl mx-auto px-6">
 
         {/* ── HEADER ── */}
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start mb-8">
           <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-foreground">
             My<br/>Calendar
           </h1>
@@ -91,151 +91,156 @@ export default function CalendarView() {
           </button>
         </div>
 
-        {/* ── MONTH CALENDAR CARD ── */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${year}-${monthIdx}`}
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white dark:bg-[#151515] shadow-sm dark:shadow-none rounded-[40px] p-6 border border-black/5 dark:border-white/5 space-y-6"
-          >
-            {/* Month Nav Header */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setCurrentDate(new Date(year, monthIdx - 1, 1))}
-                className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="text-center px-4 py-1 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
-              >
-                <p className="text-2xl font-medium text-foreground">{MONTHS[monthIdx]}</p>
-                <p className="text-sm font-medium text-black/50 dark:text-white/50">{year}</p>
-              </button>
-              <button
-                onClick={() => setCurrentDate(new Date(year, monthIdx + 1, 1))}
-                className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
+        {/* ── DESKTOP 2-COL / MOBILE STACK ── */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-10 lg:items-start">
 
-            {showMonthPicker ? (
-              <div className="grid grid-cols-3 gap-3 pt-2">
-                {MONTHS.map((m, idx) => (
+          {/* LEFT: Month calendar */}
+          <div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${year}-${monthIdx}`}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white dark:bg-[#151515] shadow-sm dark:shadow-none rounded-[40px] p-6 border border-black/5 dark:border-white/5 space-y-6"
+              >
+                {/* Month Nav Header */}
+                <div className="flex items-center justify-between">
                   <button
-                    key={m}
-                    onClick={() => {
-                      setCurrentDate(new Date(year, idx, 1));
-                      setShowMonthPicker(false);
-                    }}
-                    className={`py-5 rounded-[24px] text-sm font-medium transition-all ${
-                      idx === monthIdx
-                        ? 'bg-card-yellow text-black shadow-lg scale-105 z-10'
-                        : 'bg-black/5 dark:bg-white/5 text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground'
-                    }`}
+                    onClick={() => setCurrentDate(new Date(year, monthIdx - 1, 1))}
+                    className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                   >
-                    {m.substring(0, 3)}
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
-                ))}
-              </div>
-            ) : (
-              <>
-                {/* Weekdays */}
-                <div className="grid grid-cols-7 gap-1">
-                  {WEEKDAYS.map((d, idx) => (
-                    <div key={idx} className="text-center text-xs font-semibold text-black/30 dark:text-white/30 py-1">
-                      {d}
-                    </div>
-                  ))}
+                  <button
+                    onClick={() => setShowMonthPicker(!showMonthPicker)}
+                    className="text-center px-4 py-1 rounded-2xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                  >
+                    <p className="text-2xl font-medium text-foreground">{MONTHS[monthIdx]}</p>
+                    <p className="text-sm font-medium text-black/50 dark:text-white/50">{year}</p>
+                  </button>
+                  <button
+                    onClick={() => setCurrentDate(new Date(year, monthIdx + 1, 1))}
+                    className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
                 </div>
 
-                {/* Grid */}
-                <div className="grid grid-cols-7 gap-2">
-                  {cells.map(cell => {
-                    if (!cell.day) return <div key={cell.key} className="aspect-square" />;
-                    const cellDate = new Date(year, monthIdx, cell.day);
-                    const isPast = cellDate < todayBoundary;
-                    const isToday = cellDate.toDateString() === new Date().toDateString();
-                    const isSelected = selectedDate.toDateString() === cellDate.toDateString();
-                    const hasEv = !isPast && eventsOnDay(cell.day) > 0;
-                    const status = isPast ? getDayStatus(year, monthIdx, cell.day) : 'none';
-
-                    return (
+                {showMonthPicker ? (
+                  <div className="grid grid-cols-3 gap-3 pt-2">
+                    {MONTHS.map((m, idx) => (
                       <button
-                        key={cell.key}
-                        onClick={() => !isPast && setSelectedDate(cellDate)}
-                        disabled={isPast}
-                        className={`aspect-square flex flex-col items-center justify-center rounded-2xl text-sm font-medium transition-all relative ${
-                          isSelected
-                            ? 'bg-card-yellow text-black scale-105 z-10'
-                            : isToday
-                            ? 'border border-card-yellow text-card-yellow'
-                            : isPast
-                            ? status === 'yes'
-                              ? 'bg-black/5 dark:bg-white/5 text-black/50 dark:text-white/50'
-                              : 'text-black/20 dark:text-white/20 cursor-not-allowed'
-                            : 'text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10'
+                        key={m}
+                        onClick={() => {
+                          setCurrentDate(new Date(year, idx, 1));
+                          setShowMonthPicker(false);
+                        }}
+                        className={`py-5 rounded-[24px] text-sm font-medium transition-all ${
+                          idx === monthIdx
+                            ? 'bg-card-yellow text-black shadow-lg scale-105 z-10'
+                            : 'bg-black/5 dark:bg-white/5 text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground'
                         }`}
                       >
-                        {cell.day}
-                        {hasEv && (
-                          <span className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-black' : 'bg-card-yellow'}`} />
-                        )}
+                        {m.substring(0, 3)}
                       </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </motion.div>
-        </AnimatePresence>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    {/* Weekdays */}
+                    <div className="grid grid-cols-7 gap-1">
+                      {WEEKDAYS.map((d, idx) => (
+                        <div key={idx} className="text-center text-xs font-semibold text-black/30 dark:text-white/30 py-1">
+                          {d}
+                        </div>
+                      ))}
+                    </div>
 
-        {/* ── SCHEDULED EVENTS LIST ── */}
-        <div>
-          <div className="flex items-center justify-between mb-4 px-2">
-            <h3 className="text-2xl font-medium text-foreground">
-              {selectedDate.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric' })}
-            </h3>
-            <span className="text-sm font-medium text-black/50 dark:text-white/50 px-3 py-1 bg-black/10 dark:bg-white/10 rounded-full">
-              {eventsForDate.length} {eventsForDate.length === 1 ? 'Event' : 'Events'}
-            </span>
+                    {/* Grid */}
+                    <div className="grid grid-cols-7 gap-2">
+                      {cells.map(cell => {
+                        if (!cell.day) return <div key={cell.key} className="aspect-square" />;
+                        const cellDate = new Date(year, monthIdx, cell.day);
+                        const isPast = cellDate < todayBoundary;
+                        const isToday = cellDate.toDateString() === new Date().toDateString();
+                        const isSelected = selectedDate.toDateString() === cellDate.toDateString();
+                        const hasEv = !isPast && eventsOnDay(cell.day) > 0;
+                        const status = isPast ? getDayStatus(year, monthIdx, cell.day) : 'none';
+
+                        return (
+                          <button
+                            key={cell.key}
+                            onClick={() => !isPast && setSelectedDate(cellDate)}
+                            disabled={isPast}
+                            className={`aspect-square flex flex-col items-center justify-center rounded-2xl text-sm font-medium transition-all relative ${
+                              isSelected
+                                ? 'bg-card-yellow text-black scale-105 z-10'
+                                : isToday
+                                ? 'border border-card-yellow text-card-yellow'
+                                : isPast
+                                ? status === 'yes'
+                                  ? 'bg-black/5 dark:bg-white/5 text-black/50 dark:text-white/50'
+                                  : 'text-black/20 dark:text-white/20 cursor-not-allowed'
+                                : 'text-black/80 dark:text-white/80 hover:bg-black/10 dark:hover:bg-white/10'
+                            }`}
+                          >
+                            {cell.day}
+                            {hasEv && (
+                              <span className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? 'bg-black' : 'bg-card-yellow'}`} />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          <div className="space-y-4">
-            {eventsForDate.length === 0 ? (
-              <div className="bg-card-purple/10 rounded-[32px] p-10 text-center border border-card-purple/20">
-                <CalendarIcon className="w-10 h-10 mx-auto mb-3 text-card-purple opacity-50" />
-                <p className="text-lg font-medium text-black/70 dark:text-white/70">No events scheduled</p>
-                <p className="text-sm text-black/40 dark:text-white/40 mt-1">Tap + to add an event</p>
-              </div>
-            ) : (
-              eventsForDate.map(e => (
-                <div key={e.id} className="p-5 rounded-[32px] bg-card-purple text-black flex flex-col justify-between min-h-[120px]">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-xl leading-tight pr-4">{e.title}</h4>
-                    <button
-                      onClick={() => deleteTask(e.id)}
-                      className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center flex-shrink-0 text-black/60 hover:text-black transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 bg-black/10 self-start px-3 py-1.5 rounded-full mt-2">
-                    <Clock className="w-4 h-4 opacity-70" />
-                    <span className="text-sm font-semibold">{e.scheduled_time || '12:00'}</span>
-                  </div>
+          {/* RIGHT: Events for selected day */}
+          <div className="mt-8 lg:mt-0">
+            <div className="flex items-center justify-between mb-4 px-2">
+              <h3 className="text-2xl font-medium text-foreground">
+                {selectedDate.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric' })}
+              </h3>
+              <span className="text-sm font-medium text-black/50 dark:text-white/50 px-3 py-1 bg-black/10 dark:bg-white/10 rounded-full">
+                {eventsForDate.length} {eventsForDate.length === 1 ? 'Event' : 'Events'}
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {eventsForDate.length === 0 ? (
+                <div className="bg-card-purple/10 rounded-[32px] p-10 text-center border border-card-purple/20">
+                  <CalendarIcon className="w-10 h-10 mx-auto mb-3 text-card-purple opacity-50" />
+                  <p className="text-lg font-medium text-black/70 dark:text-white/70">No events scheduled</p>
+                  <p className="text-sm text-black/40 dark:text-white/40 mt-1">Tap + to add an event</p>
                 </div>
-              ))
-            )}
+              ) : (
+                eventsForDate.map(e => (
+                  <div key={e.id} className="p-5 rounded-[32px] bg-card-purple text-black flex flex-col justify-between min-h-[120px]">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium text-xl leading-tight pr-4">{e.title}</h4>
+                      <button
+                        onClick={() => deleteTask(e.id)}
+                        className="w-8 h-8 rounded-full border border-black/20 flex items-center justify-center flex-shrink-0 text-black/60 hover:text-black transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 bg-black/10 self-start px-3 py-1.5 rounded-full mt-2">
+                      <Clock className="w-4 h-4 opacity-70" />
+                      <span className="text-sm font-semibold">{e.scheduled_time || '12:00'}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
+
         </div>
-
       </div>
 
 

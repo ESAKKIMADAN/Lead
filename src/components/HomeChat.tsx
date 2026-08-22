@@ -382,7 +382,7 @@ export default function HomeChat() {
     <div className="h-[100dvh] flex flex-col bg-background text-foreground overflow-hidden select-none font-sans relative group">
 
       {/* ── HEADER ── */}
-      <header className="px-6 py-8 flex items-center justify-between sticky top-0 z-40">
+      <header className="max-w-4xl w-full mx-auto px-6 py-8 flex items-center justify-between sticky top-0 z-40">
         <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-foreground">
           Lead
         </h1>
@@ -395,7 +395,7 @@ export default function HomeChat() {
       </header>
 
       {/* ── MESSAGES ── */}
-      <div className="flex-1 overflow-y-auto px-6 space-y-6 pb-40">
+      <div className="flex-1 overflow-y-auto px-6 space-y-6 pb-40 max-w-4xl w-full mx-auto">
 
         {messages.length === 0 && !isLoading && (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-8">
@@ -462,7 +462,7 @@ export default function HomeChat() {
       </div>
 
       {/* ── INPUT BAR ── */}
-      <div className="absolute left-0 right-0 px-6 z-30 flex flex-col items-center transition-all duration-300 bottom-28 max-sm:group-has-[textarea:focus]:bottom-4">
+      <div className="absolute left-0 right-0 px-6 z-30 flex flex-col items-center transition-all duration-300 bottom-28 max-sm:group-has-[textarea:focus]:bottom-4 max-w-4xl mx-auto">
         <div className="flex items-center justify-center gap-3 mb-3 max-w-xl w-full mx-auto">
           <button 
             onClick={() => handleSuggest('Schedule an event: ')} 

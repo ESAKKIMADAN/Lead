@@ -221,7 +221,7 @@ export default function NotesView() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-48 select-none relative font-sans">
-      <div className="max-w-md mx-auto px-6 pt-12 space-y-8">
+      <div className="max-w-md lg:max-w-5xl mx-auto px-6 pt-12 space-y-8">
 
         {/* ── HEADER ── */}
         <div className="flex justify-between items-start">
@@ -265,7 +265,7 @@ export default function NotesView() {
         </div>
 
         {/* ── NOTES GRID ── */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <AnimatePresence>
             {filtered.length === 0 ? (
               <motion.div
