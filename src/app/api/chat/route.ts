@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const recentMessages = chatMessages.slice(-4).map((m: any) => `${m.role}: ${m.content}`).join('\n');
     
     const analysisResult = await generateObject({
-      model: groq('llama-3.1-70b-versatile'),
+      model: groq('openai/gpt-oss-20b'),
       schema: z.object({
         emotion: z.string().describe("The user's current emotional state (e.g. frustrated, motivated, procrastinating)."),
         recommended_communication: z.object({
@@ -108,7 +108,7 @@ Example 4: "Note saved. [ACTION:NOTE|My Idea|Need to build a cool app|mint]"
 Always provide a brief verbal confirmation in your text alongside the hidden command.`;
 
     const result = await streamText({
-      model: groq('llama-3.1-70b-versatile'),
+      model: groq('moonshotai/kimi-k2-instruct'),
       system: systemPrompt,
       messages: chatMessages,
     });
