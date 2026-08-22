@@ -26,10 +26,14 @@ export default function AccountView({ onBack }: AccountViewProps) {
   const [isNewGoal, setIsNewGoal] = useState(false);
 
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark');
     setIsDarkMode(isDark);
+    if (typeof Notification !== 'undefined') {
+      setNotifPermission(Notification.permission);
+    }
   }, []);
 
   const toggleTheme = () => {
@@ -182,7 +186,7 @@ export default function AccountView({ onBack }: AccountViewProps) {
                       <span className="text-lg font-medium">Notifications</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {permissionState === 'granted' && (
+                      {notifPermission === 'granted' && (
                         <span className="text-[10px] font-bold uppercase tracking-widest text-black bg-card-mint px-3 py-1 rounded-full">Active</span>
                       )}
                       <ChevronRight className="w-5 h-5 text-black/30 dark:text-white/30" />
