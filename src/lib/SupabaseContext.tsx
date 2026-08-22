@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import { type User, type Session } from '@supabase/supabase-js';
+import { offlineDb } from './offlineDb';
 
 // Types mimicking original Dexie structure
 export interface Profile {
@@ -92,6 +93,7 @@ interface SupabaseContextType {
   logs: NotificationLog[];
   notes: Note[];
   loading: boolean;
+  isOnline: boolean;
   authError: string | null;
   signUp: (email: string, name: string, pin: string) => Promise<boolean>;
   signIn: (email: string, pin: string) => Promise<boolean>;
@@ -134,6 +136,9 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState<boolean>(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
 
   // Read session on startup
   useEffect(() => {
@@ -169,11 +174,33 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
+  // ── OFFLINE / ONLINE ──────────────────────────────────────────────────────
   const fetchUserData = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      // 1. Fetch Profile
+      // OFFLINE: Serve from Dexie cache
+      if (!navigator.onLine) {
+        const profileData = await offlineDb.profiles.get(user.id) ?? null;
+        setProfile(profileData);
+        if (profileData) {
+          const egosData = await offlineDb.egos.where('user_id').equals(user.id).toArray();
+          egosData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          setEgos(egosData);
+          setEgo(egosData.find(e => e.active) || egosData[0] || null);
+
+          const tasksData = await offlineDb.tasks.where('user_id').equals(user.id).toArray();
+          tasksData.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          setTasks(tasksData);
+
+          const notesData = await offlineDb.notes.where('user_id').equals(user.id).toArray();
+          notesData.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+          setNotes(notesData);
+        }
+        return;
+      }
+
+      // ONLINE: Fetch from Supabase and write-through cache to Dexie
       const { data: profileData, error: profileErr } = await supabase
         .from('profiles')
         .select('*')
@@ -182,9 +209,10 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
       if (profileErr) throw profileErr;
       setProfile(profileData);
+      if (profileData) await offlineDb.profiles.put(profileData);
 
       if (profileData) {
-        // 2. Fetch Egos
+        // Egos
         const { data: egosData, error: egosErr } = await supabase
           .from('egos')
           .select('*')
@@ -193,11 +221,15 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
         if (egosErr) throw egosErr;
         setEgos(egosData || []);
-        // active ego is either the one marked active, or the most recent one
+        if (egosData && egosData.length > 0) {
+          // Clear stale egos for this user then re-insert fresh ones
+          await offlineDb.egos.where('user_id').equals(user.id).delete();
+          await offlineDb.egos.bulkPut(egosData);
+        }
         const activeEgo = egosData?.find(e => e.active) || egosData?.[0] || null;
         setEgo(activeEgo);
 
-        // 3. Fetch Tasks
+        // Tasks
         const { data: tasksData, error: tasksErr } = await supabase
           .from('tasks')
           .select('*')
@@ -206,8 +238,12 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
         if (tasksErr) throw tasksErr;
         setTasks(tasksData || []);
+        if (tasksData && tasksData.length > 0) {
+          await offlineDb.tasks.where('user_id').equals(user.id).delete();
+          await offlineDb.tasks.bulkPut(tasksData);
+        }
 
-        // 4. Fetch Logs
+        // Logs (not cached offline — not critical)
         const { data: logsData, error: logsErr } = await supabase
           .from('notification_logs')
           .select('*')
@@ -217,7 +253,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         if (logsErr) throw logsErr;
         setLogs(logsData || []);
 
-        // 5. Fetch Notes
+        // Notes
         const { data: notesData, error: notesErr } = await supabase
           .from('notes')
           .select('*')
@@ -227,6 +263,10 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
         if (notesErr && notesErr.code !== 'PGRST116') throw notesErr;
         setNotes(notesData || []);
+        if (notesData && notesData.length > 0) {
+          await offlineDb.notes.where('user_id').equals(user.id).delete();
+          await offlineDb.notes.bulkPut(notesData);
+        }
       }
     } catch (err: any) {
       console.error('Error fetching data from Supabase:', err.message);
@@ -235,15 +275,91 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Replay all queued offline mutations to Supabase, then refresh
+  const syncPendingOps = async () => {
+    if (!user) return;
+    const ops = await offlineDb.pendingOps.orderBy('created_at').toArray();
+    if (ops.length === 0) return;
+
+    for (const op of ops) {
+      try {
+        if (op.table === 'tasks') {
+          if (op.operation === 'insert') {
+            await supabase.from('tasks').insert(op.payload);
+          } else if (op.operation === 'update') {
+            await supabase.from('tasks').update(op.payload.updates)
+              .eq('id', op.payload.id).eq('user_id', user.id);
+          } else if (op.operation === 'delete') {
+            await supabase.from('tasks').delete()
+              .eq('id', op.payload.id).eq('user_id', user.id);
+          }
+        } else if (op.table === 'notes') {
+          if (op.operation === 'insert') {
+            await supabase.from('notes').insert(op.payload);
+          } else if (op.operation === 'update') {
+            await supabase.from('notes').update(op.payload.updates)
+              .eq('id', op.payload.id).eq('user_id', user.id);
+          } else if (op.operation === 'delete') {
+            await supabase.from('notes').delete()
+              .eq('id', op.payload.id).eq('user_id', user.id);
+          }
+        }
+        if (op.id !== undefined) {
+          await offlineDb.pendingOps.delete(op.id);
+        }
+      } catch (err: any) {
+        console.error('Error syncing pending op:', op, err.message);
+      }
+    }
+    // Re-fetch from Supabase to get real IDs and fresh data
+    await fetchUserData();
+  };
+
+  // Online/offline event listeners
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      syncPendingOps();
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [user]); // re-register when user changes so syncPendingOps closure is fresh
+
+  // ── NOTES ────────────────────────────────────────────────────────────────
   const addNote = async (title: string, content: string, color: string) => {
     if (!user) return;
+    const payload = { user_id: user.id, title, content, color, pinned: false };
+
+    if (!navigator.onLine) {
+      const tempNote: Note = {
+        ...payload,
+        id: `temp_${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      await offlineDb.notes.put(tempNote);
+      await offlineDb.pendingOps.add({
+        table: 'notes', operation: 'insert', payload,
+        created_at: new Date().toISOString(),
+      });
+      setNotes(prev => [tempNote, ...prev]);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('notes')
-        .insert({ user_id: user.id, title, content, color, pinned: false })
+        .insert(payload)
         .select()
         .single();
       if (error) throw error;
+      await offlineDb.notes.put(data);
       setNotes(prev => [data, ...prev]);
     } catch (err: any) {
       console.error('Error adding note:', err.message);
@@ -252,6 +368,25 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
   const updateNote = async (id: string, updates: Partial<Pick<Note, 'title' | 'content' | 'color' | 'pinned'>>) => {
     if (!user) return;
+
+    if (!navigator.onLine) {
+      const existing = await offlineDb.notes.get(id);
+      if (existing) {
+        const updated: Note = { ...existing, ...updates, updated_at: new Date().toISOString() };
+        await offlineDb.notes.put(updated);
+        setNotes(prev =>
+          prev.map(n => n.id === id ? updated : n)
+            .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
+        );
+      }
+      await offlineDb.pendingOps.add({
+        table: 'notes', operation: 'update',
+        payload: { id, updates: { ...updates, updated_at: new Date().toISOString() } },
+        created_at: new Date().toISOString(),
+      });
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('notes')
@@ -261,6 +396,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .select()
         .single();
       if (error) throw error;
+      await offlineDb.notes.put(data);
       setNotes(prev => prev.map(n => n.id === id ? data : n)
         .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)));
     } catch (err: any) {
@@ -270,6 +406,17 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
   const deleteNote = async (id: string) => {
     if (!user) return;
+
+    if (!navigator.onLine) {
+      await offlineDb.notes.delete(id);
+      await offlineDb.pendingOps.add({
+        table: 'notes', operation: 'delete', payload: { id },
+        created_at: new Date().toISOString(),
+      });
+      setNotes(prev => prev.filter(n => n.id !== id));
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('notes')
@@ -277,12 +424,14 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .eq('id', id)
         .eq('user_id', user.id);
       if (error) throw error;
+      await offlineDb.notes.delete(id);
       setNotes(prev => prev.filter(n => n.id !== id));
     } catch (err: any) {
       console.error('Error deleting note:', err.message);
     }
   };
 
+  // ── AUTH ─────────────────────────────────────────────────────────────────
   const signUp = async (email: string, name: string, pin: string): Promise<boolean> => {
     setAuthError(null);
     try {
@@ -351,7 +500,6 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const resetPin = async (email: string): Promise<boolean> => {
     setAuthError(null);
     try {
-      // Provide a redirectUrl if needed, e.g. window.location.origin + '/reset-pin'
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
       });
@@ -385,12 +533,12 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  // ── ONBOARDING ───────────────────────────────────────────────────────────
   const createInitialData = async (name: string, goals: { goal: string; reason: string }[], psychology?: any) => {
     if (!user) return;
     setLoading(true);
 
     try {
-      // 1. Create Profile
       const { data: newProfile, error: profileErr } = await supabase
         .from('profiles')
         .insert({
@@ -406,8 +554,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
       if (profileErr) throw profileErr;
       setProfile(newProfile);
+      await offlineDb.profiles.put(newProfile);
 
-      // 2. Create Egos
       const egosToInsert = goals.map((g, idx) => ({
         user_id: user.id,
         goal: g.goal.trim(),
@@ -424,11 +572,13 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .select();
 
       if (egosErr) throw egosErr;
-      
+      if (insertedEgos && insertedEgos.length > 0) {
+        await offlineDb.egos.bulkPut(insertedEgos);
+      }
+
       const activeEgo = insertedEgos?.find(e => e.active) || insertedEgos?.[0] || null;
       setEgo(activeEgo);
 
-      // Seed initial tasks
       const initialTasks = [
         { user_id: user.id, title: 'Morning Walk', type: 'short_term', scheduled_time: '06:00', completed: true },
         { user_id: user.id, title: 'Study DSA', type: 'short_term', scheduled_time: '20:00', completed: true },
@@ -442,6 +592,9 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
       if (tasksErr) throw tasksErr;
       setTasks(insertedTasks || []);
+      if (insertedTasks && insertedTasks.length > 0) {
+        await offlineDb.tasks.bulkPut(insertedTasks);
+      }
 
     } catch (err: any) {
       console.error('Error creating onboarding data:', err.message);
@@ -450,6 +603,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // ── PROFILE ──────────────────────────────────────────────────────────────
   const updateProfileName = async (name: string) => {
     if (!user || !profile) return;
     try {
@@ -462,11 +616,13 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
       setProfile(data);
+      await offlineDb.profiles.put(data);
     } catch (err: any) {
       console.error('Error updating name:', err.message);
     }
   };
 
+  // ── EGOS ─────────────────────────────────────────────────────────────────
   const updateEgo = async (id: string, updates: Partial<Ego>) => {
     if (!user) return;
     try {
@@ -479,6 +635,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) throw error;
+      await offlineDb.egos.put(data);
       setEgo(data);
     } catch (err: any) {
       console.error('Error updating ego:', err.message);
@@ -506,6 +663,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) throw error;
+      await offlineDb.egos.put(data);
       setEgos(prev => [data, ...prev.map(e => ({ ...e, active: false }))]);
       setEgo(data);
     } catch (err: any) {
@@ -520,7 +678,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .from('egos')
         .update({ active: false })
         .eq('user_id', user.id);
-      
+
       const { data, error } = await supabase
         .from('egos')
         .update({ active: true })
@@ -528,8 +686,9 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', user.id)
         .select()
         .single();
-        
+
       if (error) throw error;
+      await offlineDb.egos.put(data);
       setEgos(prev => prev.map(e => e.id === id ? data : { ...e, active: false }));
       setEgo(data);
     } catch (err: any) {
@@ -537,24 +696,48 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addTask = async (title: string, type: 'short_term' | 'long_term' | 'event' | 'daily', scheduledTime?: string, targetDate?: string) => {
+  // ── TASKS ────────────────────────────────────────────────────────────────
+  const addTask = async (
+    title: string,
+    type: 'short_term' | 'long_term' | 'event' | 'daily',
+    scheduledTime?: string,
+    targetDate?: string,
+  ) => {
     if (!user) return;
+    const payload = {
+      user_id: user.id,
+      title: title.trim(),
+      type,
+      scheduled_time: scheduledTime || null,
+      target_date: targetDate || null,
+      completed: false,
+    };
+
+    if (!navigator.onLine) {
+      const tempTask: Task = {
+        ...payload,
+        id: `temp_${Date.now()}`,
+        created_at: new Date().toISOString(),
+      };
+      await offlineDb.tasks.put(tempTask);
+      await offlineDb.pendingOps.add({
+        table: 'tasks', operation: 'insert', payload,
+        created_at: new Date().toISOString(),
+      });
+      setTasks(prev => [...prev, tempTask]);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .insert({
-          user_id: user.id,
-          title: title.trim(),
-          type,
-          scheduled_time: scheduledTime || null,
-          target_date: targetDate || null,
-          completed: false,
-        })
+        .insert(payload)
         .select()
         .single();
 
       if (error) throw error;
-      setTasks((prev) => [...prev, data]);
+      await offlineDb.tasks.put(data);
+      setTasks(prev => [...prev, data]);
     } catch (err: any) {
       console.error('Error adding task:', err.message);
     }
@@ -562,50 +745,57 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
   const toggleTask = async (task: Task) => {
     if (!user) return;
+    const nextCompleted = !task.completed;
+    const updates = {
+      completed: nextCompleted,
+      completed_at: nextCompleted ? new Date().toISOString() : null,
+    };
+
+    if (!navigator.onLine) {
+      const updatedTask: Task = { ...task, ...updates };
+      await offlineDb.tasks.put(updatedTask);
+      await offlineDb.pendingOps.add({
+        table: 'tasks', operation: 'update',
+        payload: { id: task.id, updates },
+        created_at: new Date().toISOString(),
+      });
+      setTasks(prev => prev.map(t => t.id === task.id ? updatedTask : t));
+      return;
+    }
+
     try {
-      const nextCompleted = !task.completed;
       const { data, error } = await supabase
         .from('tasks')
-        .update({
-          completed: nextCompleted,
-          completed_at: nextCompleted ? new Date().toISOString() : null,
-        })
+        .update(updates)
         .eq('id', task.id)
         .eq('user_id', user.id)
         .select()
         .single();
 
       if (error) throw error;
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? data : t)));
+      await offlineDb.tasks.put(data);
+      setTasks(prev => prev.map(t => t.id === task.id ? data : t));
 
       // Learning Loop: Update effectiveness of the last used communication profile
       if (nextCompleted && ego) {
-        let updates: Partial<Ego> = {};
-        
-        // Old tone logic
+        let egoUpdates: Partial<Ego> = {};
+
         if (ego.last_used_tone) {
           const currentScores = ego.tone_effectiveness || { supportive: 50, tough_love: 50, direct: 50, challenge: 50 };
           const tone = ego.last_used_tone;
           if (currentScores[tone] !== undefined) {
             const newScore = Math.min(100, currentScores[tone] + 5);
-            updates.tone_effectiveness = { ...currentScores, [tone]: newScore };
+            egoUpdates.tone_effectiveness = { ...currentScores, [tone]: newScore };
           }
         }
-        
-        // New communication profile logic
+
         if (ego.last_used_communication) {
           const currentProfile = ego.communication_profile || {
-            directness: 0.5,
-            energy: 0.5,
-            emotional_support: 0.5,
-            detail: 0.5,
-            challenge: 0.5,
-            humor: 0.5
+            directness: 0.5, energy: 0.5, emotional_support: 0.5,
+            detail: 0.5, challenge: 0.5, humor: 0.5,
           };
-          
-          const shiftRate = 0.2; // Move 20% towards the effective communication dimensions
-          
-          const newProfile = {
+          const shiftRate = 0.2;
+          egoUpdates.communication_profile = {
             directness: currentProfile.directness * (1 - shiftRate) + ego.last_used_communication.directness * shiftRate,
             energy: currentProfile.energy * (1 - shiftRate) + ego.last_used_communication.energy * shiftRate,
             emotional_support: currentProfile.emotional_support * (1 - shiftRate) + ego.last_used_communication.emotional_support * shiftRate,
@@ -613,12 +803,10 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
             challenge: currentProfile.challenge * (1 - shiftRate) + ego.last_used_communication.challenge * shiftRate,
             humor: currentProfile.humor * (1 - shiftRate) + ego.last_used_communication.humor * shiftRate,
           };
-          
-          updates.communication_profile = newProfile;
         }
 
-        if (Object.keys(updates).length > 0) {
-          await updateEgo(ego.id, updates);
+        if (Object.keys(egoUpdates).length > 0) {
+          await updateEgo(ego.id, egoUpdates);
         }
       }
     } catch (err: any) {
@@ -628,6 +816,17 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
   const deleteTask = async (id: string) => {
     if (!user) return;
+
+    if (!navigator.onLine) {
+      await offlineDb.tasks.delete(id);
+      await offlineDb.pendingOps.add({
+        table: 'tasks', operation: 'delete', payload: { id },
+        created_at: new Date().toISOString(),
+      });
+      setTasks(prev => prev.filter(t => t.id !== id));
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('tasks')
@@ -636,12 +835,14 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      setTasks((prev) => prev.filter((t) => t.id !== id));
+      await offlineDb.tasks.delete(id);
+      setTasks(prev => prev.filter(t => t.id !== id));
     } catch (err: any) {
       console.error('Error deleting task:', err.message);
     }
   };
 
+  // ── NOTIFICATION LOGS ────────────────────────────────────────────────────
   const addNotificationLog = async (log: Omit<NotificationLog, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return;
     try {
@@ -663,7 +864,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) throw error;
-      setLogs((prev) => [data, ...prev]);
+      setLogs(prev => [data, ...prev]);
     } catch (err: any) {
       console.error('Error adding notification log:', err.message);
     }
@@ -681,22 +882,30 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) throw error;
-      setLogs((prev) => prev.map((l) => (l.id === id ? data : l)));
+      setLogs(prev => prev.map(l => l.id === id ? data : l));
     } catch (err: any) {
       console.error('Error updating notification log:', err.message);
     }
   };
 
+  // ── RESET ────────────────────────────────────────────────────────────────
   const resetAllData = async () => {
     if (!user) return;
     try {
-      // Cascade delete on profiles will delete egos, tasks, and logs.
       const { error } = await supabase
         .from('profiles')
         .delete()
         .eq('id', user.id);
 
       if (error) throw error;
+
+      // Clear local cache too
+      await offlineDb.profiles.delete(user.id);
+      await offlineDb.egos.where('user_id').equals(user.id).delete();
+      await offlineDb.tasks.where('user_id').equals(user.id).delete();
+      await offlineDb.notes.where('user_id').equals(user.id).delete();
+      await offlineDb.pendingOps.clear();
+
       setProfile(null);
       setEgo(null);
       setEgos([]);
@@ -720,6 +929,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         logs,
         notes,
         loading,
+        isOnline,
         authError,
         signUp,
         signIn,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useSupabase } from '@/lib/SupabaseContext';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import Onboarding from '@/components/Onboarding';
 import HomeChat from '@/components/HomeChat';
 import CalendarView from '@/components/CalendarView';
@@ -74,8 +75,16 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 
 export default function Home() {
   const { user, profile, loading, refreshData } = useSupabase();
+  const isOnline = useOnlineStatus();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
   const [loaderColor, setLoaderColor] = useState('bg-black');
+
+  // Auto-switch away from chat when going offline
+  useEffect(() => {
+    if (!isOnline && activeTab === 'chat') {
+      setActiveTab('todo');
+    }
+  }, [isOnline]);
 
   useEffect(() => {
     const meta = document.getElementById('theme-color-meta');
@@ -119,7 +128,21 @@ export default function Home() {
   }
 
   if (!user) return <Auth />;
-  if (!profile) return <Onboarding onComplete={() => refreshData()} />;
+  if (!profile && isOnline) return <Onboarding onComplete={() => refreshData()} />;
+  if (!profile && !isOnline) return (
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-6 p-8 text-center">
+      <svg viewBox="0 0 100 100" fill="white" className="w-12 h-12 opacity-30">
+        <polygon points="50,15 15,35 15,47 50,27 85,47 85,35" />
+        <polygon points="50,33 15,53 15,65 50,45 85,65 85,53" />
+        <polygon points="50,51 15,71 15,83 50,63 85,83 85,71" />
+      </svg>
+      <p className="text-white/60 text-lg font-medium">You're offline</p>
+      <p className="text-white/30 text-sm max-w-xs">Connect to the internet to load your data for the first time.</p>
+    </div>
+  );
+
+  // Filter out chat tab when offline (AI requires network)
+  const visibleTabs = isOnline ? TABS : TABS.filter(t => t.id !== 'chat');
 
   return (
     <div className="min-h-[100dvh] bg-background relative overflow-x-hidden group">
@@ -142,6 +165,22 @@ export default function Home() {
         </motion.div>
       </AnimatePresence>
 
+      {/* ── OFFLINE BANNER ── */}
+      <AnimatePresence>
+        {!isOnline && (
+          <motion.div
+            initial={{ y: -40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -40, opacity: 0 }}
+            transition={{ type: 'spring', damping: 22, stiffness: 260 }}
+            className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-amber-500/90 backdrop-blur-sm text-black text-xs font-bold uppercase tracking-widest py-2 px-4 pointer-events-none"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+            Offline — changes will sync when reconnected
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── FLOATING NAVIGATION BAR ── */}
       <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none pb-8 px-4 transition-all duration-300 transform max-sm:group-has-[textarea:focus]:opacity-0 max-sm:group-has-[textarea:focus]:translate-y-12">
         <motion.div
@@ -150,7 +189,7 @@ export default function Home() {
           transition={{ delay: 0.2, type: 'spring', damping: 26, stiffness: 320 }}
           className="pointer-events-auto flex items-center gap-1 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-full p-2 shadow-2xl dark:shadow-[0_20px_40px_rgba(0,0,0,0.8)]"
         >
-          {TABS.map((tab) => {
+          {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.id;
             const isCenter = tab.id === 'chat';
             return (
