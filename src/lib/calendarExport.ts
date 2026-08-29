@@ -3,6 +3,7 @@ export interface TaskCalendarData {
   scheduledTime?: string | null;
   targetDate?: string | null;
   details?: string | null;
+  type?: 'short_term' | 'long_term' | 'event' | 'daily' | string;
 }
 
 // Helper to compute start and end Date objects in local time
@@ -59,7 +60,10 @@ export function generateGoogleCalendarUrl(task: TaskCalendarData): string {
   const startUtc = formatDateToUtcIcs(startDate);
   const endUtc = formatDateToUtcIcs(endDate);
 
-  const title = encodeURIComponent(`⏰ ${task.title}`);
+  const isEvent = task.type === 'long_term' || task.type === 'event';
+  const prefix = isEvent ? '📅 Event: ' : '⏰ Alarm Task: ';
+
+  const title = encodeURIComponent(`${prefix}${task.title}`);
   const details = encodeURIComponent(task.details || `Reminder set via Lead app for "${task.title}".`);
   const location = encodeURIComponent('Lead App');
 
@@ -78,6 +82,9 @@ export function generateIcsContent(task: TaskCalendarData): string {
   const title = task.title.replace(/\n/g, ' ');
   const description = (task.details || `Reminder set via Lead app for "${task.title}".`).replace(/\n/g, ' ');
 
+  const isEvent = task.type === 'long_term' || task.type === 'event';
+  const summaryPrefix = isEvent ? '📅 ' : '⏰ ';
+
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -89,7 +96,7 @@ export function generateIcsContent(task: TaskCalendarData): string {
     `DTSTAMP:${nowUtc}`,
     `DTSTART:${startUtc}`,
     `DTEND:${endUtc}`,
-    `SUMMARY:⏰ ${title}`,
+    `SUMMARY:${summaryPrefix}${title}`,
     `DESCRIPTION:${description}`,
     'LOCATION:Lead App',
     'STATUS:CONFIRMED',
@@ -101,14 +108,14 @@ export function generateIcsContent(task: TaskCalendarData): string {
     'BEGIN:VALARM',
     'TRIGGER:-PT15M',
     'ACTION:DISPLAY',
-    `DESCRIPTION:Upcoming Task: ${title} in 15 minutes`,
+    `DESCRIPTION:Upcoming Reminder: ${title} in 15 minutes`,
     'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');
 }
 
-// ── 3. DOWNLOAD / OPEN .ICS FILE (FOR APPLE CALENDAR / PHONE CALENDAR) ──
+// ── 3. DOWNLOAD / OPEN .ICS FILE (FOR APPLE CALENDAR / PHONE CALENDAR ALARM) ──
 export function downloadIcsFile(task: TaskCalendarData): void {
   const icsContent = generateIcsContent(task);
   const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
@@ -125,23 +132,27 @@ export function downloadIcsFile(task: TaskCalendarData): void {
   window.URL.revokeObjectURL(link.href);
 }
 
-// ── 4. AUTOMATIC DEVICE DETECTION & CALENDAR ALARM TRIGGER ──
+// ── 4. AUTOMATIC DEVICE DETECTION & ROUTING (TASK ➔ ALARM, EVENT ➔ CALENDAR) ──
 export function autoAddCalendarReminder(task: TaskCalendarData): void {
   if (typeof window === 'undefined') return;
 
+  const isEvent = task.type === 'long_term' || task.type === 'event';
   const ua = window.navigator.userAgent;
   const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-  if (isIOS) {
-    // iOS Safari -> automatically download/open Apple Calendar .ics file
-    downloadIcsFile(task);
-  } else {
-    // Android / Windows / Desktop -> automatically open Google Calendar intent URL
-    const googleUrl = generateGoogleCalendarUrl(task);
-    const newWindow = window.open(googleUrl, '_blank');
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-      // If popup blocked, fallback to downloading .ics
+  if (isEvent) {
+    // EVENT / GOAL MODE ➔ Add to Calendar (Google Calendar or Apple Calendar)
+    if (isIOS) {
       downloadIcsFile(task);
+    } else {
+      const googleUrl = generateGoogleCalendarUrl(task);
+      const newWindow = window.open(googleUrl, '_blank');
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        downloadIcsFile(task);
+      }
     }
+  } else {
+    // TASK / DAILY SYSTEM MODE ➔ Trigger Alarm (Download .ics with VALARM triggers / Alarm Intent)
+    downloadIcsFile(task);
   }
 }

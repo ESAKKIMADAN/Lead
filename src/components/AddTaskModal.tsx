@@ -28,7 +28,7 @@ export default function AddTaskModal({
     await addTask(title.trim(), type, sTime, tDate);
 
     // Automatically trigger phone calendar/alarm creation for current device
-    autoAddCalendarReminder({ title: title.trim(), scheduledTime: sTime, targetDate: tDate });
+    autoAddCalendarReminder({ title: title.trim(), scheduledTime: sTime, targetDate: tDate, type });
 
     onClose();
   };

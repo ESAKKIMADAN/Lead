@@ -76,7 +76,7 @@ export default function TodoView() {
     await addTask(t, 'short_term', newTime || undefined, activeDate.toISOString());
 
     // Auto trigger device alarm setup
-    autoAddCalendarReminder({ title: t, scheduledTime: newTime || undefined, targetDate: activeDate.toISOString() });
+    autoAddCalendarReminder({ title: t, scheduledTime: newTime || undefined, targetDate: activeDate.toISOString(), type: 'short_term' });
 
     setNewTask('');
     setShowInput(false);
@@ -210,7 +210,7 @@ export default function TodoView() {
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button
-                          onClick={() => autoAddCalendarReminder({ title: task.title, scheduledTime: task.scheduled_time, targetDate: task.target_date })}
+                          onClick={() => autoAddCalendarReminder({ title: task.title, scheduledTime: task.scheduled_time, targetDate: task.target_date, type: task.type })}
                           title="Add to Phone Calendar / Alarm"
                           className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
                             task.completed ? 'hover:bg-black/10 dark:hover:bg-white/10 text-black/40 dark:text-white/40' : 'hover:bg-black/10 text-black/60'
