@@ -125,6 +125,45 @@ export const padPassword = (pin: string) => {
   return `${pin}_leadapp`;
 };
 
+export function calculateScheduledTimestamp(scheduledTime?: string, targetDate?: string): string | null {
+  if (!scheduledTime && !targetDate) return null;
+
+  const now = new Date();
+
+  let year = now.getFullYear();
+  let month = now.getMonth();
+  let day = now.getDate();
+
+  if (targetDate) {
+    const cleanDateStr = targetDate.split('T')[0];
+    const parts = cleanDateStr.split('-').map(Number);
+    if (parts.length === 3 && !parts.some(isNaN)) {
+      year = parts[0];
+      month = parts[1] - 1;
+      day = parts[2];
+    }
+  }
+
+  let hours = 9;
+  let minutes = 0;
+
+  if (scheduledTime) {
+    const parts = scheduledTime.split(':').map(Number);
+    if (parts.length >= 2 && !parts.some(isNaN)) {
+      hours = parts[0];
+      minutes = parts[1];
+    }
+  }
+
+  const scheduledDate = new Date(year, month, day, hours, minutes, 0, 0);
+
+  if (!targetDate && scheduledTime && scheduledDate.getTime() <= now.getTime()) {
+    scheduledDate.setDate(scheduledDate.getDate() + 1);
+  }
+
+  return scheduledDate.toISOString();
+}
+
 export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -738,6 +777,20 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       await offlineDb.tasks.put(data);
       setTasks(prev => [...prev, data]);
+
+      // Automatically insert into notification_logs for Supabase Cron outside-the-app push notifications
+      if (data && (scheduledTime || targetDate)) {
+        const scheduledAt = calculateScheduledTimestamp(scheduledTime, targetDate);
+        if (scheduledAt) {
+          await supabase.from('notification_logs').insert({
+            user_id: user.id,
+            task_id: data.id,
+            title: `Reminder: ${data.title}`,
+            scheduled_at: scheduledAt,
+            pushed: false,
+          });
+        }
+      }
     } catch (err: any) {
       console.error('Error adding task:', err.message);
     }
