@@ -247,13 +247,13 @@ export default function CalendarView() {
       {/* Add form Modal */}
       <AnimatePresence>
         {showAddEvent && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowAddEvent(false)}>
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm" onClick={() => setShowAddEvent(false)}>
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="w-full sm:max-w-md bg-[#111] sm:rounded-[40px] rounded-t-[40px] p-6 space-y-6 shadow-2xl border border-black/10 dark:border-white/10"
+              className="w-full sm:max-w-md bg-white dark:bg-[#111] sm:rounded-[40px] rounded-t-[40px] p-6 space-y-6 shadow-2xl border border-black/10 dark:border-white/10"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between">
@@ -269,12 +269,12 @@ export default function CalendarView() {
                 placeholder="Event title..."
                 value={newEventTitle}
                 onChange={e => setNewEventTitle(e.target.value)}
-                className="w-full bg-transparent text-foreground font-medium text-2xl placeholder-white/30 outline-none"
+                className="w-full bg-transparent text-foreground font-medium text-2xl placeholder-black/30 dark:placeholder-white/30 outline-none"
                 required
               />
 
               <div className="flex gap-4">
-                <div className="flex-1 bg-black/5 dark:bg-white/5 rounded-3xl p-4 border border-white/5">
+                <div className="flex-1 bg-black/5 dark:bg-white/5 rounded-3xl p-4 border border-black/5 dark:border-white/5">
                   <label className="text-xs font-semibold text-black/50 dark:text-white/50 uppercase tracking-wider mb-2 block">Time</label>
                   <input
                     type="time"

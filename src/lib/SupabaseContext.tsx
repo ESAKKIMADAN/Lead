@@ -51,10 +51,10 @@ export interface Task {
   user_id: string;
   title: string;
   type: 'short_term' | 'long_term' | 'event' | 'daily';
-  scheduled_time?: string;
-  target_date?: string;
+  scheduled_time?: string | null;
+  target_date?: string | null;
   completed: boolean;
-  completed_at?: string;
+  completed_at?: string | null;
   created_at: string;
 }
 
@@ -116,6 +116,8 @@ interface SupabaseContextType {
   deleteNote: (id: string) => Promise<void>;
   resetAllData: () => Promise<void>;
   refreshData: () => Promise<void>;
+  savePushSubscription: (sub: PushSubscription) => Promise<void>;
+  removePushSubscription: (endpoint: string) => Promise<void>;
 }
 
 const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
@@ -527,10 +529,19 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
   };
 
   const getEmailByUsername = async (username: string): Promise<string | null> => {
+    const trimmed = username.trim();
+    if (trimmed.includes('@')) {
+      return trimmed;
+    }
     try {
-      const { data, error } = await supabase.rpc('get_email_by_username', { p_username: username });
-      if (error) throw error;
-      return data || null;
+      const { data, error } = await supabase.rpc('get_email_by_username', { p_username: trimmed });
+      if (!error && data) return data;
+
+      // Try lowercase variant
+      const { data: lowerData, error: lowerError } = await supabase.rpc('get_email_by_username', { p_username: trimmed.toLowerCase() });
+      if (!lowerError && lowerData) return lowerData;
+
+      return null;
     } catch (err: any) {
       console.error('Error fetching email by username:', err.message);
       return null;
@@ -971,6 +982,38 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const savePushSubscription = async (sub: PushSubscription) => {
+    if (!user) return;
+    try {
+      const subJson = sub.toJSON();
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .upsert({
+          user_id: user.id,
+          endpoint: subJson.endpoint,
+          p256dh: subJson.keys?.p256dh,
+          auth: subJson.keys?.auth,
+        }, { onConflict: 'user_id, endpoint' });
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('Error saving push subscription:', err.message);
+    }
+  };
+
+  const removePushSubscription = async (endpoint: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('endpoint', endpoint);
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('Error removing push subscription:', err.message);
+    }
+  };
+
   return (
     <SupabaseContext.Provider
       value={{
@@ -1006,6 +1049,8 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
         deleteNote,
         resetAllData,
         refreshData: fetchUserData,
+        savePushSubscription,
+        removePushSubscription,
       }}
     >
       {children}

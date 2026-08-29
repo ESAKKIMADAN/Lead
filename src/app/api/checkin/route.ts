@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     // If no answer yet — generate the check-in question
     if (!answer) {
       const { text } = await generateText({
-        model: groq('llama-3.3-70b-versatile'),
+        model: groq('openai/gpt-oss-120b'),
         prompt: `You are LEAD — a brutally honest, ego-triggering AI accountability coach.
 Generate ONE short daily check-in question for ${userName} based on their goal.
 
@@ -34,7 +34,7 @@ Reply with ONLY the question. No punctuation style changes needed, just the ques
 
     // If answer is provided — generate a motivational response that triggers their ego
     const { text } = await generateText({
-      model: groq('llama-3.3-70b-versatile'),
+      model: groq('openai/gpt-oss-120b'),
       prompt: `You are LEAD — a brutally honest, ego-triggering AI accountability coach.
 ${userName} just answered their daily check-in.
 

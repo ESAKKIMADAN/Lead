@@ -16,8 +16,11 @@ const WEEKDAYS = [
   { day: 'S', key: 0 },
 ];
 
-function getTasksForDate(tasks: any[], date: Date) {
+function getTasksForDate(tasks: any[], date: Date, isToday: boolean = false) {
   const dateStr = date.toDateString();
+  const dateBoundary = new Date(date);
+  dateBoundary.setHours(23, 59, 59, 999);
+
   return tasks.filter(t => {
     if (t.type === 'short_term' || t.type === 'daily') return true;
     if (t.type === 'event') {
@@ -29,10 +32,14 @@ function getTasksForDate(tasks: any[], date: Date) {
     return false;
   }).filter(task => {
     if (task.type === 'daily') return true;
-    const d = task.target_date
-      ? new Date(task.target_date).toDateString()
-      : new Date(task.created_at).toDateString();
-    return d === dateStr;
+    const taskDateObj = task.target_date ? new Date(task.target_date) : new Date(task.created_at);
+    const d = taskDateObj.toDateString();
+    if (d === dateStr) return true;
+    // Rollover incomplete past tasks to Today
+    if (isToday && !task.completed && taskDateObj < dateBoundary) {
+      return true;
+    }
+    return false;
   });
 }
 
@@ -58,7 +65,7 @@ export default function TodoView() {
   const activeDate = new Date(baseDate);
   activeDate.setDate(baseDate.getDate() + activeDateOffset);
 
-  const dayTasks = getTasksForDate(tasks, activeDate);
+  const dayTasks = getTasksForDate(tasks, activeDate, activeDateOffset === 0);
   const completedTasks = dayTasks.filter(t => t.completed);
   const doingTasks = dayTasks.filter(t => !t.completed);
   const totalCount = dayTasks.length;

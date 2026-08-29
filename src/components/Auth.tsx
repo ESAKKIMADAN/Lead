@@ -143,14 +143,14 @@ export default function Auth() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5 mt-8">
-          {/* Username Field */}
+          {/* Username / Email Field */}
           <div className="space-y-2">
             <label className="text-[10px] font-bold uppercase tracking-widest text-white/50 block pl-4">
-              Username
+              {isSignUp ? 'Username' : 'Username or Email'}
             </label>
             <input 
               type="text" 
-              placeholder="e.g. madan" 
+              placeholder={isSignUp ? 'e.g. madan' : 'e.g. madan or name@example.com'} 
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full bg-[#1A1A1A] text-lg text-white rounded-[2rem] px-6 py-5 outline-none focus:bg-[#222] transition-colors placeholder:text-white/20 font-medium"

@@ -9,8 +9,10 @@ import TodoView from '@/components/TodoView';
 import NotesView from '@/components/NotesView';
 import AccountView from '@/components/AccountView';
 import Auth from '@/components/Auth';
+import NotificationModal from '@/components/Notification';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { NotificationLog } from '@/lib/SupabaseContext';
 
 type Tab = 'calendar' | 'todo' | 'chat' | 'notes' | 'account';
 
@@ -74,10 +76,21 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 ];
 
 export default function Home() {
-  const { user, profile, loading, refreshData } = useSupabase();
+  const { user, profile, loading, refreshData, logs, updateNotificationLog } = useSupabase();
   const isOnline = useOnlineStatus();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
   const [loaderColor, setLoaderColor] = useState('bg-black');
+  const [activeNotification, setActiveNotification] = useState<NotificationLog | null>(null);
+
+  // Check for pending notifications
+  useEffect(() => {
+    if (logs && logs.length > 0) {
+      const pending = logs.find(l => !l.opened && !l.response);
+      if (pending && !activeNotification) {
+        setActiveNotification(pending);
+      }
+    }
+  }, [logs]);
 
   // Auto-switch away from chat when going offline
   useEffect(() => {
@@ -222,6 +235,20 @@ export default function Home() {
           })}
         </motion.div>
       </div>
+
+      {/* ── ACTIVE NOTIFICATION MODAL ── */}
+      {activeNotification && (
+        <NotificationModal
+          notification={activeNotification}
+          onDismiss={() => setActiveNotification(null)}
+          onAction={async (response) => {
+            if (activeNotification.id) {
+              await updateNotificationLog(activeNotification.id, response);
+            }
+            setActiveNotification(null);
+          }}
+        />
+      )}
     </div>
   );
 }

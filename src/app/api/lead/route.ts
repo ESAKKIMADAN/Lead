@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const groq = createGroq({ apiKey: process.env.GROQ_API_KEY });
 
     const { object } = await generateObject({
-      model: groq('llama-3.3-70b-versatile'),
+      model: groq('openai/gpt-oss-20b'),
       system: LEAD_SYSTEM_PROMPT,
       prompt: `Generate a notification based on the following context:\n${JSON.stringify(input, null, 2)}`,
       schema: z.object({

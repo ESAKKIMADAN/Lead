@@ -94,23 +94,23 @@ function NoteCard({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.92 }}
             onClick={e => e.stopPropagation()}
-            className="absolute top-12 right-4 z-20 w-36 bg-black rounded-2xl shadow-xl border border-black/10 dark:border-white/10 overflow-hidden text-foreground"
+            className="absolute top-12 right-4 z-20 w-36 bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-xl border border-black/10 dark:border-white/10 overflow-hidden text-black dark:text-white"
           >
             <button
               onClick={() => { onPin(note.id, !note.pinned); setMenuOpen(false); }}
-              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium hover:bg-black/10 dark:hover:bg-white/10"
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/10"
             >
               <Pin className="w-4 h-4"/> {note.pinned ? 'Unpin' : 'Pin'}
             </button>
             <button
               onClick={() => { onEdit(note); setMenuOpen(false); }}
-              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium hover:bg-black/10 dark:hover:bg-white/10"
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/10"
             >
               <Pen className="w-4 h-4"/> Edit
             </button>
             <button
               onClick={() => { onDelete(note.id); setMenuOpen(false); }}
-              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-400/10"
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-500/10"
             >
               <Trash2 className="w-4 h-4"/> Delete
             </button>
@@ -141,13 +141,13 @@ function NoteEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm" onClick={onClose}>
       <motion.div
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="w-full sm:max-w-md bg-[#111] sm:rounded-[40px] rounded-t-[40px] p-6 space-y-4 shadow-2xl h-[85vh] sm:h-auto flex flex-col border border-black/10 dark:border-white/10"
+        className="w-full sm:max-w-md bg-white dark:bg-[#111] sm:rounded-[40px] rounded-t-[40px] p-6 space-y-4 shadow-2xl h-[85vh] sm:h-auto flex flex-col border border-black/10 dark:border-white/10"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-2">
@@ -162,14 +162,14 @@ function NoteEditor({
           placeholder="Title"
           value={title}
           onChange={e => setTitle(e.target.value)}
-          className="w-full bg-transparent text-foreground font-medium text-3xl placeholder-white/30 outline-none"
+          className="w-full bg-transparent text-foreground font-medium text-3xl placeholder-black/30 dark:placeholder-white/30 outline-none"
         />
 
         <textarea
-          placeholder="Start writing..."
+          placeholder="Start writing... (Tip: use '- ' for checklists)"
           value={content}
           onChange={e => setContent(e.target.value)}
-          className="w-full flex-1 bg-transparent text-black/80 dark:text-white/80 text-lg leading-relaxed font-medium outline-none resize-none placeholder-white/20 mt-4"
+          className="w-full flex-1 bg-transparent text-black/80 dark:text-white/80 text-lg leading-relaxed font-medium outline-none resize-none placeholder-black/20 dark:placeholder-white/20 mt-4"
         />
 
         <div className="flex items-center gap-3 pt-4 pb-2">
@@ -177,13 +177,13 @@ function NoteEditor({
             <button
               key={c.id}
               onClick={() => setColor(c.id)}
-              className={`w-10 h-10 rounded-full ${c.bg} ${color === c.id ? 'ring-2 ring-white ring-offset-2 ring-offset-[#111] scale-110' : 'opacity-80'} transition-all`}
+              className={`w-10 h-10 rounded-full ${c.bg} ${color === c.id ? 'ring-2 ring-black dark:ring-white ring-offset-2 ring-offset-white dark:ring-offset-[#111] scale-110' : 'opacity-80'} transition-all`}
             />
           ))}
         </div>
 
         <div className="pt-2">
-          <button onClick={handleSave} disabled={saving} className="w-full bg-white text-black py-4 rounded-[24px] font-semibold text-lg hover:bg-white/90 transition-colors">
+          <button onClick={handleSave} disabled={saving} className="w-full bg-black text-white dark:bg-white dark:text-black py-4 rounded-[24px] font-semibold text-lg hover:opacity-90 transition-opacity">
             {saving ? 'Saving...' : 'Save Note'}
           </button>
         </div>
@@ -207,6 +207,10 @@ export default function NotesView() {
 
   const filtered = notes.filter(n => {
     if (activeTab === 'Important') return n.pinned;
+    if (activeTab === 'To-do') {
+      const content = n.content || '';
+      return content.includes('- [ ]') || content.includes('- [x]') || content.includes('x ') || content.split('\n').some(line => line.trim().startsWith('- '));
+    }
     return true;
   });
 
@@ -241,15 +245,19 @@ export default function NotesView() {
           <button
             onClick={() => setActiveTab('All')}
             className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
-              activeTab === 'All' ? 'border-white text-foreground' : 'border-white/20 text-black/50 dark:text-white/50'
+              activeTab === 'All'
+                ? 'border-black text-black dark:border-white dark:text-white'
+                : 'border-black/20 text-black/50 dark:border-white/20 dark:text-white/50'
             }`}
           >
-            All <span className="ml-1 opacity-50 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">{notes.length}</span>
+            All <span className="ml-1 opacity-50 text-[10px] bg-black/10 dark:bg-white/20 px-2 py-0.5 rounded-full">{notes.length}</span>
           </button>
           <button
             onClick={() => setActiveTab('Important')}
             className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
-              activeTab === 'Important' ? 'border-white text-foreground' : 'border-white/20 text-black/50 dark:text-white/50'
+              activeTab === 'Important'
+                ? 'border-black text-black dark:border-white dark:text-white'
+                : 'border-black/20 text-black/50 dark:border-white/20 dark:text-white/50'
             }`}
           >
             Important
@@ -257,7 +265,9 @@ export default function NotesView() {
           <button
             onClick={() => setActiveTab('To-do')}
             className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
-              activeTab === 'To-do' ? 'border-white text-foreground' : 'border-white/20 text-black/50 dark:text-white/50'
+              activeTab === 'To-do'
+                ? 'border-black text-black dark:border-white dark:text-white'
+                : 'border-black/20 text-black/50 dark:border-white/20 dark:text-white/50'
             }`}
           >
             To-do

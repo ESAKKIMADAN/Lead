@@ -25,20 +25,33 @@ export async function POST(req: Request) {
     // ----------------------------------------------------
     const recentMessages = chatMessages.slice(-4).map((m: any) => `${m.role}: ${m.content}`).join('\n');
     
-    const analysisResult = await generateObject({
-      model: groq('openai/gpt-oss-20b'),
-      schema: z.object({
-        emotion: z.string().describe("The user's current emotional state (e.g. frustrated, motivated, procrastinating)."),
-        recommended_communication: z.object({
-          directness: z.number().min(0).max(1).describe("How blunt should LEAD be? (0.0 = gentle, 1.0 = extremely blunt)"),
-          energy: z.number().min(0).max(1).describe("How energetic should LEAD sound? (0.0 = calm/serious, 1.0 = highly energetic/excited)"),
-          emotional_support: z.number().min(0).max(1).describe("How much empathy does the user need? (0.0 = cold logic, 1.0 = highly empathetic)"),
-          detail: z.number().min(0).max(1).describe("Length of response (0.0 = short/one sentence, 1.0 = detailed explanation)"),
-          challenge: z.number().min(0).max(1).describe("Accountability level (0.0 = gentle push, 1.0 = aggressive accountability)"),
-          humor: z.number().min(0).max(1).describe("Tone seriousness (0.0 = serious/urgent, 1.0 = playful/funny)")
-        }).describe("The exact communication profile you recommend LEAD uses for the very next response.")
-      }),
-      prompt: `Analyze the user's current state based on their recent messages and behavior.
+    let state = {
+      emotion: 'focused',
+      recommended_communication: {
+        directness: 0.7,
+        energy: 0.6,
+        emotional_support: 0.5,
+        detail: 0.3,
+        challenge: 0.7,
+        humor: 0.3
+      }
+    };
+
+    try {
+      const analysisResult = await generateObject({
+        model: groq('openai/gpt-oss-20b'),
+        schema: z.object({
+          emotion: z.string().describe("The user's current emotional state (e.g. frustrated, motivated, procrastinating)."),
+          recommended_communication: z.object({
+            directness: z.number().min(0).max(1).describe("How blunt should LEAD be? (0.0 = gentle, 1.0 = extremely blunt)"),
+            energy: z.number().min(0).max(1).describe("How energetic should LEAD sound? (0.0 = calm/serious, 1.0 = highly energetic/excited)"),
+            emotional_support: z.number().min(0).max(1).describe("How much empathy does the user need? (0.0 = cold logic, 1.0 = highly empathetic)"),
+            detail: z.number().min(0).max(1).describe("Length of response (0.0 = short/one sentence, 1.0 = detailed explanation)"),
+            challenge: z.number().min(0).max(1).describe("Accountability level (0.0 = gentle push, 1.0 = aggressive accountability)"),
+            humor: z.number().min(0).max(1).describe("Tone seriousness (0.0 = serious/urgent, 1.0 = playful/funny)")
+          }).describe("The exact communication profile you recommend LEAD uses for the very next response.")
+        }),
+        prompt: `Analyze the user's current state based on their recent messages and behavior.
       Name: ${profileData?.name}
       Goal: ${profileData?.goal}
       Tasks Today: ${profileData?.behavioralHistory?.completedTasks || 0} completed, ${profileData?.behavioralHistory?.pendingTasks || 0} pending.
@@ -54,9 +67,13 @@ export async function POST(req: Request) {
       ${recentMessages}
       
       Determine their emotion and the exact communication profile values (0.0 to 1.0) to use.`
-    });
-
-    const state = analysisResult.object;
+      });
+      if (analysisResult?.object) {
+        state = analysisResult.object;
+      }
+    } catch (err: any) {
+      console.warn('Analysis fallback used due to:', err?.message || err);
+    }
 
     // ----------------------------------------------------
     // STEP 2: The Communicator Engine (Response Gen)
@@ -134,7 +151,8 @@ Always provide a brief verbal confirmation in your text alongside the hidden com
         'Connection': 'keep-alive',
         'Cache-Control': 'no-cache, no-transform',
         'X-Used-Communication': JSON.stringify(state.recommended_communication),
-        'Access-Control-Expose-Headers': 'X-Used-Communication',
+        'X-Used-Tone': state.emotion,
+        'Access-Control-Expose-Headers': 'X-Used-Communication, X-Used-Tone',
       },
     });
   } catch (error: any) {

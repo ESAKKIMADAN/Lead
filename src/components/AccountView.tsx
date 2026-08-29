@@ -13,7 +13,7 @@ interface AccountViewProps {
 }
 
 export default function AccountView({ onBack }: AccountViewProps) {
-  const { profile, ego, egos, setActiveEgo, logs, updateProfileName, updateEgo, updatePin, resetAllData, signOut, authError, addEgo } = useSupabase();
+  const { profile, ego, egos, setActiveEgo, logs, updateProfileName, updateEgo, updatePin, resetAllData, signOut, authError, addEgo, savePushSubscription } = useSupabase();
 
   
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('main');
@@ -27,6 +27,132 @@ export default function AccountView({ onBack }: AccountViewProps) {
 
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
+
+  const [permissionState, setPermissionState] = useState<string>('default');
+  const [swStatus, setSwStatus] = useState<string>('Checking...');
+  const [pushSupported, setPushSupported] = useState<boolean>(false);
+  const [subStatus, setSubStatus] = useState<string>('Checking...');
+  const [testStatus, setTestStatus] = useState<string>('None');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
+      setPushSupported(true);
+      setPermissionState(Notification.permission);
+      navigator.serviceWorker.ready.then(reg => {
+        setSwStatus('Registered');
+        reg.pushManager.getSubscription().then(sub => {
+          setSubStatus(sub ? 'Active' : 'Missing');
+        });
+      }).catch(err => {
+        setSwStatus('Failed: ' + err.message);
+      });
+    } else {
+      setPushSupported(false);
+      setSwStatus('Unsupported');
+      setSubStatus('Unsupported');
+    }
+  }, []);
+
+  function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  const handleSubscribe = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('Push notifications not supported by this browser.');
+      return;
+    }
+    
+    try {
+      const permission = await Notification.requestPermission();
+      setPermissionState(permission);
+      if (permission !== 'granted') {
+        alert('Permission denied.');
+        return;
+      }
+      
+      const reg = await navigator.serviceWorker.ready;
+      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidPublicKey) {
+        alert('VAPID Key not found.');
+        return;
+      }
+
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+      });
+      
+      await savePushSubscription(subscription);
+      setSubStatus('Active');
+      alert('Successfully subscribed to push notifications!');
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to subscribe: ' + err.message);
+    }
+  };
+
+  const handleTestPush = async () => {
+    setTestStatus('Sending...');
+    try {
+      const sessionModule = await import('@/lib/supabase');
+      const sessionData = await sessionModule.supabase.auth.getSession();
+      const token = sessionData.data.session?.access_token;
+
+      // Call our Next.js notification API route
+      let res = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: '🔔 LEAD Notification',
+          body: 'Push notifications are working correctly.'
+        })
+      });
+
+      // Fallback to Supabase edge function if local route failed
+      if (!res.ok && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        try {
+          res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-immediate-notification`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              title: '🔔 LEAD Notification',
+              body: 'Push notifications are working correctly.'
+            })
+          });
+        } catch {}
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (data.success || res.ok) {
+        setTestStatus('Success');
+        // If permission is already granted, also trigger a local browser notification for instant visual feedback
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          new Notification('🔔 LEAD Notification', {
+            body: 'Push notifications are working correctly.',
+            icon: '/logo.png',
+          });
+        }
+      } else {
+        setTestStatus('Failed: ' + (data.error || 'Request failed'));
+      }
+    } catch (err: any) {
+      setTestStatus('Failed: ' + err.message);
+    }
+  };
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark');
@@ -462,28 +588,44 @@ export default function AccountView({ onBack }: AccountViewProps) {
             >
               <div className="bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 rounded-[40px] p-6 space-y-5 shadow-sm">
                 <div>
-                  <p className="text-sm font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest pl-2">Notifications</p>
+                  <p className="text-sm font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest pl-2">Push Notifications</p>
                 </div>
 
                 <div className="flex flex-col gap-4 w-full">
                   <p className="text-sm text-foreground/70 px-2 leading-relaxed">
-                    Browser notifications can be unreliable. Instead, you can add an hourly reminder directly to your native OS calendar (Apple, Google, Windows). 
-                    It is 100% reliable and works offline!
+                    Enable push notifications to receive real-time updates and scheduled accountability check-ins directly on this device.
                   </p>
                   
-                  <a
-                    href={`webcal://${typeof window !== 'undefined' ? window.location.host : ''}/api/calendar?user=${profile?.id}`}
+                  <button
+                    onClick={handleSubscribe}
                     className="bg-card-orange text-black px-6 py-4 rounded-3xl font-bold text-sm uppercase tracking-widest w-full flex items-center justify-center gap-2 hover:brightness-95 transition-all active:scale-95 shadow-md"
                   >
                     <Bell className="w-5 h-5 stroke-[2.5]" />
-                    Subscribe to Reminders
-                  </a>
-                  
-                  <p className="text-xs text-foreground/50 px-2 text-center">
-                    Clicking this will automatically open your default calendar app.
-                  </p>
+                    Enable Notifications
+                  </button>
                 </div>
 
+              </div>
+
+              {/* Diagnostics Area */}
+              <div className="bg-white dark:bg-[#151515] border border-black/5 dark:border-white/5 rounded-[40px] p-6 space-y-4 shadow-sm">
+                 <p className="text-sm font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest pl-2">Diagnostics</p>
+                 <div className="text-xs text-foreground/70 space-y-2 px-2 font-mono">
+                    <p>Push API: {pushSupported ? 'Supported' : 'Unsupported'}</p>
+                    <p>Permission: {permissionState}</p>
+                    <p>Service Worker: {swStatus}</p>
+                    <p>Subscription: {subStatus}</p>
+                    <p>Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}</p>
+                    <p>Test Status: {testStatus}</p>
+                 </div>
+                 
+                 <button
+                    onClick={handleTestPush}
+                    disabled={subStatus !== 'Active'}
+                    className="mt-4 bg-black/10 dark:bg-white/10 text-foreground px-6 py-3 rounded-3xl font-bold text-xs uppercase tracking-widest w-full hover:bg-black/20 dark:hover:bg-white/20 transition-all disabled:opacity-50"
+                  >
+                    Send Test Notification
+                  </button>
               </div>
             </motion.div>
           )}
