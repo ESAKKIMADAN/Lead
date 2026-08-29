@@ -73,10 +73,10 @@ export default function TodoView() {
     const t = newTask.trim();
     if (!t) return;
     setAddingTask(true);
-    await addTask(t, 'short_term', newTime || undefined, activeDate.toISOString());
-
-    // Auto trigger device alarm setup
+    // Auto trigger device alarm setup synchronously (preserves user touch gesture)
     autoAddCalendarReminder({ title: t, scheduledTime: newTime || undefined, targetDate: activeDate.toISOString(), type: 'short_term' });
+
+    await addTask(t, 'short_term', newTime || undefined, activeDate.toISOString());
 
     setNewTask('');
     setShowInput(false);

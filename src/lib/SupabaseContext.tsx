@@ -157,7 +157,8 @@ export function calculateScheduledTimestamp(scheduledTime?: string, targetDate?:
 
   const scheduledDate = new Date(year, month, day, hours, minutes, 0, 0);
 
-  if (!targetDate && scheduledTime && scheduledDate.getTime() <= now.getTime()) {
+  // If specified time has already passed today, schedule for tomorrow at that time
+  if (scheduledTime && scheduledDate.getTime() <= now.getTime()) {
     scheduledDate.setDate(scheduledDate.getDate() + 1);
   }
 

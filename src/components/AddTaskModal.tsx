@@ -25,10 +25,10 @@ export default function AddTaskModal({
     const sTime = type === 'short_term' ? scheduledTime || undefined : undefined;
     const tDate = type === 'long_term' ? targetDate || undefined : undefined;
 
-    await addTask(title.trim(), type, sTime, tDate);
-
-    // Automatically trigger phone calendar/alarm creation for current device
+    // Automatically trigger phone calendar/alarm creation synchronously (preserves user touch gesture)
     autoAddCalendarReminder({ title: title.trim(), scheduledTime: sTime, targetDate: tDate, type });
+
+    await addTask(title.trim(), type, sTime, tDate);
 
     onClose();
   };

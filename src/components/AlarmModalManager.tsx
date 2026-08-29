@@ -6,6 +6,26 @@ import { useSupabase, type Task } from '@/lib/SupabaseContext';
 import { playAlarmSound, stopAlarmSound } from '@/lib/alarmAudio';
 import { Bell, CheckCircle2, Clock, Volume2, VolumeX } from 'lucide-react';
 
+function normalizeToHHMM(timeStr?: string | null): string | null {
+  if (!timeStr) return null;
+  const clean = timeStr.trim().toLowerCase();
+
+  const isPm = clean.includes('pm');
+  const isAm = clean.includes('am');
+
+  const rawTime = clean.replace(/am|pm/g, '').trim();
+  const parts = rawTime.split(':').map(Number);
+  if (parts.length < 2 || parts.some(isNaN)) return null;
+
+  let hours = parts[0];
+  const minutes = parts[1];
+
+  if (isPm && hours < 12) hours += 12;
+  if (isAm && hours === 12) hours = 0;
+
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
 export default function AlarmModalManager() {
   const { tasks, ego, toggleTask } = useSupabase();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -28,8 +48,9 @@ export default function AlarmModalManager() {
 
         let isDue = false;
 
-        // Check 1: Scheduled Time (e.g. "14:30") matches current local time
-        if (task.scheduled_time && task.scheduled_time === currentHHMM) {
+        // Check 1: Scheduled Time matches current local HH:mm
+        const normalizedScheduled = normalizeToHHMM(task.scheduled_time);
+        if (normalizedScheduled && normalizedScheduled === currentHHMM) {
           isDue = true;
         }
 
