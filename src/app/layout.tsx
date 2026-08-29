@@ -11,6 +11,7 @@ export const viewport: Viewport = {
 import { SupabaseProvider } from "@/lib/SupabaseContext";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import AndroidAppBanner from "@/components/AndroidAppBanner";
+import AlarmModalManager from "@/components/AlarmModalManager";
 
 
 export const metadata: Metadata = {
@@ -71,6 +72,7 @@ export default function RootLayout({
         <SupabaseProvider>
           <ServiceWorkerRegistrar />
           <AndroidAppBanner />
+          <AlarmModalManager />
           {children}
         </SupabaseProvider>
       </body>
