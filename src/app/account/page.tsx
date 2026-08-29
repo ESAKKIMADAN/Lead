@@ -4,12 +4,18 @@ import { useSupabase } from '@/lib/SupabaseContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { 
+  subscribeUserToPush, 
+  sendTestNotification, 
+  scheduleTestReminder, 
+  getNotificationDiagnostics 
+} from '@/lib/pushNotifications';
 
 type ScreenState = 'main' | 'profile' | 'ego' | 'notifications' | 'about' | 'faq' | 'deactivate';
 
 export default function AccountPage() {
   const router = useRouter();
-  const { profile, ego, updateProfileName, updateEgo, resetAllData, signOut } = useSupabase();
+  const { profile, ego, user, updateProfileName, updateEgo, resetAllData, signOut } = useSupabase();
   
   // Navigation stack state
   const [currentScreen, setCurrentScreen] = useState<ScreenState>('main');
@@ -26,6 +32,67 @@ export default function AccountPage() {
   const [permissionState, setPermissionState] = useState<NotificationPermission | 'unsupported'>(
     hasNotificationSupport ? Notification.permission : 'unsupported'
   );
+  const [pushLoading, setPushLoading] = useState(false);
+  const [testPushLoading, setTestPushLoading] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [pushMessage, setPushMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [diagnostics, setDiagnostics] = useState<any>(null);
+
+  // Load diagnostics when notifications screen is opened
+  useEffect(() => {
+    if (currentScreen === 'notifications' && user) {
+      getNotificationDiagnostics(user.id).then(setDiagnostics);
+    }
+  }, [currentScreen, user]);
+
+  const handleEnablePush = async () => {
+    if (!user) return;
+    setPushLoading(true);
+    setPushMessage(null);
+
+    const res = await subscribeUserToPush(user.id);
+    setPushLoading(false);
+
+    if (res.success) {
+      setPermissionState('granted');
+      setPushMessage({ type: 'success', text: res.message || 'Push notifications enabled!' });
+    } else {
+      setPushMessage({ type: 'error', text: res.error || 'Failed to enable notifications.' });
+    }
+
+    const updatedDiag = await getNotificationDiagnostics(user.id);
+    setDiagnostics(updatedDiag);
+  };
+
+  const handleSendTestPush = async () => {
+    if (!user) return;
+    setTestPushLoading(true);
+    setPushMessage(null);
+
+    const res = await sendTestNotification(user.id);
+    setTestPushLoading(false);
+
+    if (res.success) {
+      setPushMessage({ type: 'success', text: '🔔 Test push notification dispatched!' });
+    } else {
+      setPushMessage({ type: 'error', text: res.error || 'Failed to send test notification.' });
+    }
+  };
+
+  const handleScheduleTestReminder = async () => {
+    if (!user) return;
+    setScheduleLoading(true);
+    setPushMessage(null);
+
+    const res = await scheduleTestReminder(user.id, 1);
+    setScheduleLoading(false);
+
+    if (res.success) {
+      setPushMessage({ type: 'success', text: res.message || '✓ Test reminder scheduled for 1 minute from now!' });
+    } else {
+      setPushMessage({ type: 'error', text: res.error || 'Failed to schedule test reminder.' });
+    }
+  };
 
   // Sync inputs with DB values once loaded
   useEffect(() => {
@@ -373,34 +440,83 @@ export default function AccountPage() {
             >
               <div className="bg-neutral-900/40 border border-neutral-900 rounded-2xl p-6 space-y-5">
                 <div>
-                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Notification Setup</p>
+                  <p className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Notification Engine</p>
                   <p className="text-xs text-neutral-500 mt-1">
-                    Reminders are sent daily at 8:00 AM, 12:00 PM, and 6:00 PM to keep your goals aligned.
+                    Receive native push alerts on your lock screen and in-app ringing sound alarms when your tasks are due.
                   </p>
                 </div>
 
-                <div className="border-t border-neutral-800/60 pt-4 flex flex-col items-center text-center gap-4">
-                  <p className="text-xs text-neutral-300">
-                    Status: <span className="font-bold text-neutral-100">{permissionState.toUpperCase()}</span>
-                  </p>
+                {pushMessage && (
+                  <div
+                    className={`p-3.5 rounded-xl text-xs font-medium border ${
+                      pushMessage.type === 'success'
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                        : 'bg-red-500/10 border-red-500/20 text-red-300'
+                    }`}
+                  >
+                    {pushMessage.text}
+                  </div>
+                )}
 
-                  {permissionState !== 'granted' && permissionState !== 'unsupported' ? (
-                    <button
-                      onClick={requestNotificationPermission}
-                      className="bg-white text-black px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-neutral-200 active:scale-95 transition-all"
-                    >
-                      Grant Push Permissions
-                    </button>
-                  ) : permissionState === 'granted' ? (
-                    <div className="text-xs text-emerald-500 bg-emerald-500/10 px-4 py-2 rounded-xl font-bold">
-                      ✓ Notifications Enabled on This Device
+                <div className="border-t border-neutral-800/60 pt-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-neutral-400">Browser Permission:</span>
+                    <span className="font-bold text-neutral-200 uppercase">{permissionState}</span>
+                  </div>
+
+                  <div className="flex flex-col gap-2 pt-1">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleEnablePush}
+                        disabled={pushLoading}
+                        className="flex-1 bg-white text-black py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-neutral-200 active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        {pushLoading ? 'Enabling...' : 'Enable Notifications'}
+                      </button>
+
+                      <button
+                        onClick={handleSendTestPush}
+                        disabled={testPushLoading}
+                        className="flex-1 bg-neutral-800 text-neutral-200 border border-neutral-700/50 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-neutral-700 active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        {testPushLoading ? 'Sending...' : 'Instant Test Push'}
+                      </button>
                     </div>
-                  ) : (
-                    <p className="text-xs text-neutral-500">
-                      Notifications are not supported by this browser or OS.
-                    </p>
-                  )}
+
+                    <button
+                      onClick={handleScheduleTestReminder}
+                      disabled={scheduleLoading}
+                      className="w-full bg-emerald-950/40 text-emerald-300 border border-emerald-800/40 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-emerald-900/40 active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      {scheduleLoading ? 'Scheduling...' : '⏱️ Schedule Test Reminder (1 min)'}
+                    </button>
+                  </div>
                 </div>
+
+                {/* DIAGNOSTICS PANEL */}
+                {diagnostics && (
+                  <div className="border-t border-neutral-800/60 pt-4 space-y-2">
+                    <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">System Diagnostics</p>
+                    <div className="bg-black/40 border border-neutral-800/60 rounded-xl p-3 space-y-1.5 text-[11px]">
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Platform:</span>
+                        <span className="text-neutral-300">{diagnostics.isIOS ? 'Apple iOS' : 'Android / Desktop'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Home Screen PWA:</span>
+                        <span className={diagnostics.isStandalone ? 'text-emerald-400' : 'text-amber-400'}>
+                          {diagnostics.isStandalone ? 'Yes (Standalone)' : 'Browser Tab'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-neutral-500">Push Subscription:</span>
+                        <span className={diagnostics.activeSubscriptionCount > 0 ? 'text-emerald-400' : 'text-neutral-400'}>
+                          {diagnostics.activeSubscriptionCount > 0 ? 'Active' : 'Not Registered'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <button 
                   onClick={() => setCurrentScreen('main')} 
