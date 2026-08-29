@@ -124,3 +124,24 @@ export function downloadIcsFile(task: TaskCalendarData): void {
   document.body.removeChild(link);
   window.URL.revokeObjectURL(link.href);
 }
+
+// ── 4. AUTOMATIC DEVICE DETECTION & CALENDAR ALARM TRIGGER ──
+export function autoAddCalendarReminder(task: TaskCalendarData): void {
+  if (typeof window === 'undefined') return;
+
+  const ua = window.navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  if (isIOS) {
+    // iOS Safari -> automatically download/open Apple Calendar .ics file
+    downloadIcsFile(task);
+  } else {
+    // Android / Windows / Desktop -> automatically open Google Calendar intent URL
+    const googleUrl = generateGoogleCalendarUrl(task);
+    const newWindow = window.open(googleUrl, '_blank');
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      // If popup blocked, fallback to downloading .ics
+      downloadIcsFile(task);
+    }
+  }
+}

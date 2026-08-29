@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSupabase } from '@/lib/SupabaseContext';
+import { autoAddCalendarReminder } from '@/lib/calendarExport';
 
 export default function AddTaskModal({ 
   profileId, 
@@ -21,12 +22,13 @@ export default function AddTaskModal({
     e.preventDefault();
     if (!title.trim()) return;
 
-    await addTask(
-      title.trim(),
-      type,
-      type === 'short_term' ? scheduledTime || undefined : undefined,
-      type === 'long_term' ? targetDate || undefined : undefined
-    );
+    const sTime = type === 'short_term' ? scheduledTime || undefined : undefined;
+    const tDate = type === 'long_term' ? targetDate || undefined : undefined;
+
+    await addTask(title.trim(), type, sTime, tDate);
+
+    // Automatically trigger phone calendar/alarm creation for current device
+    autoAddCalendarReminder({ title: title.trim(), scheduledTime: sTime, targetDate: tDate });
 
     onClose();
   };

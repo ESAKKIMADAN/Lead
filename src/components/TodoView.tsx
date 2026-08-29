@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSupabase } from '@/lib/SupabaseContext';
-import { Flame, CheckCircle2, Circle, Plus, Trash2, CalendarDays, Zap, FileText, Bell, Calendar } from 'lucide-react';
-import { generateGoogleCalendarUrl, downloadIcsFile } from '@/lib/calendarExport';
+import { Flame, CheckCircle2, Circle, Plus, Trash2, CalendarDays, Zap, FileText, Bell } from 'lucide-react';
+import { autoAddCalendarReminder } from '@/lib/calendarExport';
 
 const WEEKDAYS = [
   { day: 'M', key: 1 },
@@ -45,7 +45,6 @@ export default function TodoView() {
   const [newTime, setNewTime] = useState('09:00');
   const [showInput, setShowInput] = useState(false);
   const [addingTask, setAddingTask] = useState(false);
-  const [calendarTask, setCalendarTask] = useState<any | null>(null);
 
   if (!profile || !ego) {
     return (
@@ -75,6 +74,10 @@ export default function TodoView() {
     if (!t) return;
     setAddingTask(true);
     await addTask(t, 'short_term', newTime || undefined, activeDate.toISOString());
+
+    // Auto trigger device alarm setup
+    autoAddCalendarReminder({ title: t, scheduledTime: newTime || undefined, targetDate: activeDate.toISOString() });
+
     setNewTask('');
     setShowInput(false);
     setAddingTask(false);
@@ -207,8 +210,8 @@ export default function TodoView() {
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button
-                          onClick={() => setCalendarTask(task)}
-                          title="Add to Calendar / Alarm"
+                          onClick={() => autoAddCalendarReminder({ title: task.title, scheduledTime: task.scheduled_time, targetDate: task.target_date })}
+                          title="Add to Phone Calendar / Alarm"
                           className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
                             task.completed ? 'hover:bg-black/10 dark:hover:bg-white/10 text-black/40 dark:text-white/40' : 'hover:bg-black/10 text-black/60'
                           }`}
@@ -282,74 +285,6 @@ export default function TodoView() {
               >
                 {addingTask ? 'Saving...' : 'Add Task'}
               </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* ── CALENDAR / ALARM EXPORT MODAL ── */}
-      <AnimatePresence>
-        {calendarTask && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setCalendarTask(null)}>
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-sm bg-[#151515] rounded-3xl p-6 space-y-5 border border-white/10 shadow-2xl"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-400">
-                    <Bell className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white text-base truncate max-w-[200px]">{calendarTask.title}</h3>
-                    <p className="text-xs text-white/50">{calendarTask.scheduled_time || '9:00 AM'}</p>
-                  </div>
-                </div>
-                <button onClick={() => setCalendarTask(null)} className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center">
-                  <Plus className="w-4 h-4 rotate-45" />
-                </button>
-              </div>
-
-              <div className="space-y-3 pt-1">
-                <p className="text-xs text-white/60">Choose how to set your phone alarm / event reminder:</p>
-
-                <a
-                  href={generateGoogleCalendarUrl({ title: calendarTask.title, scheduledTime: calendarTask.scheduled_time, targetDate: calendarTask.target_date })}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setCalendarTask(null)}
-                  className="flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all text-white active:scale-95"
-                >
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-blue-400" />
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-white">Google Calendar</p>
-                      <p className="text-[11px] text-white/50">Opens Google Calendar app with alarm</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-blue-400">Open ➔</span>
-                </a>
-
-                <button
-                  onClick={() => {
-                    downloadIcsFile({ title: calendarTask.title, scheduledTime: calendarTask.scheduled_time, targetDate: calendarTask.target_date });
-                    setCalendarTask(null);
-                  }}
-                  className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all text-white active:scale-95"
-                >
-                  <div className="flex items-center gap-3">
-                    <Bell className="w-5 h-5 text-emerald-400" />
-                    <div className="text-left">
-                      <p className="text-sm font-semibold text-white">Apple / Phone Alarm (.ics)</p>
-                      <p className="text-[11px] text-white/50">Downloads alarm event for iOS & Android</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-emerald-400">Download ➔</span>
-                </button>
-              </div>
             </motion.div>
           </div>
         )}
