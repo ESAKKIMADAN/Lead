@@ -3,7 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const rawKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseServiceKey = (rawKey && !rawKey.includes('YOUR_SERVICE_ROLE_KEY'))
+  ? rawKey
+  : (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
 
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
