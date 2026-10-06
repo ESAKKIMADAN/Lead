@@ -38,7 +38,7 @@ export default function Notification({
         initial={{ opacity: 0, y: 50, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-        className="fixed bottom-24 left-4 right-4 md:left-auto md:right-8 md:w-96 bg-white dark:bg-[#161616] text-foreground border border-black/10 dark:border-white/10 shadow-2xl rounded-[32px] p-6 z-50 backdrop-blur-md"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+6.5rem)] left-4 right-4 md:left-auto md:right-8 md:w-96 bg-white dark:bg-[#161616] text-foreground border border-black/10 dark:border-white/10 shadow-2xl rounded-[32px] p-6 z-50 backdrop-blur-md"
       >
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-xl font-bold tracking-tight pr-4">

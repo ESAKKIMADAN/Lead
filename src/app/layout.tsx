@@ -7,6 +7,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   interactiveWidget: "resizes-content",
+  viewportFit: "cover",
 };
 import { SupabaseProvider } from "@/lib/SupabaseContext";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";

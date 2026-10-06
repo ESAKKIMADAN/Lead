@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSupabase } from '@/lib/SupabaseContext';
 import { Flame, CheckCircle2, Circle, Plus, Trash2, CalendarDays, Zap, FileText, Bell } from 'lucide-react';
 import { autoAddCalendarReminder } from '@/lib/calendarExport';
+import { parseTaskDate } from '@/lib/utils';
 
 const WEEKDAYS = [
   { day: 'M', key: 1 },
@@ -18,29 +19,76 @@ const WEEKDAYS = [
 
 function getTasksForDate(tasks: any[], date: Date, isToday: boolean = false) {
   const dateStr = date.toDateString();
-  const dateBoundary = new Date(date);
-  dateBoundary.setHours(23, 59, 59, 999);
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
 
-  return tasks.filter(t => {
-    if (t.type === 'short_term' || t.type === 'daily') return true;
-    if (t.type === 'event') {
-      const lower = (t.title || '').toLowerCase();
-      if (lower.includes('meeting') || lower.includes('call') || lower.includes('appointment') || lower.includes('trip') || lower.includes('interview')) {
-        return true;
-      }
-    }
-    return false;
-  }).filter(task => {
-    if (task.type === 'daily') return true;
-    const taskDateObj = task.target_date ? new Date(task.target_date) : new Date(task.created_at);
-    const d = taskDateObj.toDateString();
-    if (d === dateStr) return true;
-    // Rollover incomplete past tasks to Today
-    if (isToday && !task.completed && taskDateObj < dateBoundary) {
-      return true;
-    }
-    return false;
+  // 1. All tasks with a valid title are eligible (short_term, event, daily, reminders, tests, etc.)
+  const eligible = tasks.filter(t => t && typeof t.title === 'string' && t.title.trim().length > 0);
+
+  // Track unique IDs to avoid duplicate object references
+  const seenIds = new Set<string>();
+  const uniqueEligible = eligible.filter(t => {
+    if (seenIds.has(t.id)) return false;
+    seenIds.add(t.id);
+    return true;
   });
+
+  const scheduledForDay: any[] = [];
+  const rolloverCandidates: any[] = [];
+
+  for (const task of uniqueEligible) {
+    if (task.type === 'daily') {
+      scheduledForDay.push(task);
+      continue;
+    }
+
+    const taskDateObj = parseTaskDate(task.target_date) || parseTaskDate(task.created_at) || new Date();
+    const d = taskDateObj.toDateString();
+
+    if (d === dateStr) {
+      scheduledForDay.push(task);
+    } else if (isToday && !task.completed && taskDateObj < startOfDay) {
+      // Past uncompleted task (rollover candidate)
+      rolloverCandidates.push(task);
+    }
+  }
+
+  // Deduplicate: If a task with the same title is already scheduled today,
+  // do NOT duplicate it with an old remained task.
+  const scheduledTitles = new Set(
+    scheduledForDay.map(t => (t.title || '').trim().toLowerCase())
+  );
+
+  // Sort rollover candidates newest first so we only keep the single most recent one if multiple uncompleted past tasks had the same title
+  rolloverCandidates.sort((a, b) => {
+    const da = new Date(a.created_at || a.target_date || 0).getTime();
+    const db = new Date(b.created_at || b.target_date || 0).getTime();
+    return db - da;
+  });
+
+  const dedupedRollover: any[] = [];
+  for (const r of rolloverCandidates) {
+    const norm = (r.title || '').trim().toLowerCase();
+    if (!norm) continue;
+    if (!scheduledTitles.has(norm)) {
+      scheduledTitles.add(norm);
+      dedupedRollover.push({ ...r, isRollover: true });
+    }
+  }
+
+  // Deduplicate scheduled tasks for the day itself if duplicate tasks were saved
+  const dedupedScheduled: any[] = [];
+  const seenKeys = new Set<string>();
+  for (const s of scheduledForDay) {
+    const norm = (s.title || '').trim().toLowerCase();
+    const key = `${norm}_${s.scheduled_time || 'any'}_${s.completed ? 'done' : 'undone'}`;
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      dedupedScheduled.push(s);
+    }
+  }
+
+  return [...dedupedScheduled, ...dedupedRollover];
 }
 
 export default function TodoView() {
@@ -75,6 +123,28 @@ export default function TodoView() {
   const streakDays = profile?.streak || 0;
   const todayDayIdx = new Date().getDay();
 
+  const handleToggleTask = async (task: any) => {
+    await toggleTask(task);
+    // If completing the task, also mark any duplicate older uncompleted tasks with same title as completed
+    if (!task.completed) {
+      const normTitle = (task.title || '').trim().toLowerCase();
+      const duplicates = tasks.filter(t => t.id !== task.id && !t.completed && (t.title || '').trim().toLowerCase() === normTitle);
+      for (const dup of duplicates) {
+        toggleTask(dup);
+      }
+    }
+  };
+
+  const handleDeleteTask = async (task: any) => {
+    await deleteTask(task.id);
+    // Clean up any stale uncompleted duplicate copies with the exact same title
+    const normTitle = (task.title || '').trim().toLowerCase();
+    const duplicates = tasks.filter(t => t.id !== task.id && (t.title || '').trim().toLowerCase() === normTitle);
+    for (const dup of duplicates) {
+      deleteTask(dup.id);
+    }
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     const t = newTask.trim();
@@ -91,7 +161,7 @@ export default function TodoView() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-48 pt-12 select-none font-sans">
+    <div className="min-h-screen bg-background text-foreground pb-48 pt-[calc(env(safe-area-inset-top,0px)+3rem)] sm:pt-16 select-none font-sans">
       <div className="max-w-md lg:max-w-5xl mx-auto px-6">
 
         {/* ── HEADER ── */}
@@ -112,7 +182,7 @@ export default function TodoView() {
           <button
             onClick={() => { setActiveTab('daily'); setActiveDateOffset(0); }}
             className={`flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium ${
-              activeTab === 'daily' && activeDateOffset === 0 ? 'border-black text-black dark:border-white dark:text-white' : 'border-black/20 text-black/50 dark:border-white/20 dark:text-white/50'
+              activeDateOffset === 0 ? 'border-black text-black dark:border-white dark:text-white' : 'border-black/20 text-black/50 dark:border-white/20 dark:text-white/50'
             }`}
           >
             Today
@@ -125,6 +195,14 @@ export default function TodoView() {
           >
             Tomorrow
           </button>
+          {activeDateOffset !== 0 && activeDateOffset !== 1 && (
+            <button
+              onClick={() => setActiveTab('daily')}
+              className="flex-shrink-0 px-6 py-2.5 rounded-full border transition-all text-sm font-medium border-black text-black dark:border-white dark:text-white bg-black/5 dark:bg-white/10"
+            >
+              {activeDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+            </button>
+          )}
         </div>
 
         {/* ── DESKTOP 2-COL / MOBILE STACK ── */}
@@ -166,14 +244,44 @@ export default function TodoView() {
                 const todayMonIdx = todayDayIdx === 0 ? 6 : todayDayIdx - 1;
                 const cellMonIdx = key === 0 ? 6 : key - 1;
                 const isPast = cellMonIdx < todayMonIdx;
+                const offset = cellMonIdx - todayMonIdx;
+                const isSelected = activeDate.getDay() === key;
+
+                // Check if any tasks exist for this day
+                const dayDate = new Date(baseDate);
+                dayDate.setDate(baseDate.getDate() + offset);
+                const dayDateStr = dayDate.toDateString();
+                const hasTasksThisDay = tasks.some(t => {
+                  if (!t || !t.title) return false;
+                  if (t.type === 'daily') return true;
+                  const td = parseTaskDate(t.target_date) || parseTaskDate(t.created_at);
+                  return td && td.toDateString() === dayDateStr;
+                });
+
                 return (
-                  <div key={day+key} className="flex flex-col items-center gap-1.5">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      isToday ? 'bg-card-yellow text-black shadow-sm dark:shadow-none' : isPast ? 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50' : 'bg-transparent text-black/30 dark:text-white/30'
+                  <button
+                    key={day + key}
+                    type="button"
+                    onClick={() => {
+                      setActiveDateOffset(offset);
+                    }}
+                    className="flex flex-col items-center gap-1.5 focus:outline-none transition-transform active:scale-95 cursor-pointer"
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                      isSelected
+                        ? 'bg-card-yellow text-black shadow-md font-bold scale-110'
+                        : isToday
+                        ? 'border border-card-yellow text-card-yellow'
+                        : isPast
+                        ? 'bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50'
+                        : 'bg-transparent text-black/40 dark:text-white/40 hover:bg-black/5 dark:hover:bg-white/5'
                     }`}>
                       {day}
                     </div>
-                  </div>
+                    {hasTasksThisDay && (
+                      <span className={`w-1 h-1 rounded-full ${isSelected ? 'bg-card-yellow' : 'bg-black/40 dark:bg-white/40'}`} />
+                    )}
+                  </button>
                 );
               })}
             </div>
@@ -200,7 +308,7 @@ export default function TodoView() {
                     }`}
                   >
                     <div className="flex items-center gap-4 relative z-10">
-                      <button onClick={() => toggleTask(task)} className="flex-shrink-0">
+                      <button onClick={() => handleToggleTask(task)} className="flex-shrink-0">
                         {task.completed ? (
                           <CheckCircle2 className="w-7 h-7 text-black/40 dark:text-white/40" />
                         ) : (
@@ -211,9 +319,16 @@ export default function TodoView() {
                         <p className={`text-lg font-medium leading-tight truncate ${task.completed ? 'line-through text-black/60 dark:text-white/60' : 'text-black'}`}>
                           {task.title}
                         </p>
-                        <p className={`text-sm mt-0.5 font-medium ${task.completed ? 'text-black/40 dark:text-white/40' : 'text-black/50'}`}>
-                          {task.scheduled_time || 'Anytime'}
-                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className={`text-sm font-medium ${task.completed ? 'text-black/40 dark:text-white/40' : 'text-black/50'}`}>
+                            {task.scheduled_time || 'Anytime'}
+                          </p>
+                          {task.isRollover && !task.completed && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-black/10 text-black/70 dark:text-black/80 px-2 py-0.5 rounded-full">
+                              Carried Over
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button
@@ -226,7 +341,7 @@ export default function TodoView() {
                           <Bell className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => deleteTask(task.id)}
+                          onClick={() => handleDeleteTask(task)}
                           className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
                             task.completed ? 'hover:bg-black/10 dark:hover:bg-white/10 text-black/40 dark:text-white/40' : 'hover:bg-black/10 text-black/40'
                           }`}

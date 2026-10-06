@@ -205,10 +205,19 @@ export default function HomeChat() {
             const params = match[2].split('|');
             if (type === 'TASK') {
               const [title, taskType, time, date] = params;
-              addTask(title, (taskType as any) || 'short_term', time, date || new Date().toISOString());
+              if (title && title.trim()) {
+                await addTask(
+                  title.trim(),
+                  (taskType?.trim() as any) || 'short_term',
+                  time?.trim() || undefined,
+                  date?.trim() || new Date().toISOString()
+                );
+              }
             } else if (type === 'NOTE') {
               const [title, content, color] = params;
-              addNote(title, content, color || 'orange');
+              if (title && title.trim()) {
+                await addNote(title.trim(), content?.trim() || '', color?.trim() || 'orange');
+              }
             }
           }
 
@@ -322,10 +331,19 @@ export default function HomeChat() {
         const params = match[2].split('|');
         if (type === 'TASK') {
           const [title, taskType, time, date] = params;
-          addTask(title, (taskType as any) || 'short_term', time, date || new Date().toISOString());
+          if (title && title.trim()) {
+            await addTask(
+              title.trim(),
+              (taskType?.trim() as any) || 'short_term',
+              time?.trim() || undefined,
+              date?.trim() || new Date().toISOString()
+            );
+          }
         } else if (type === 'NOTE') {
           const [title, content, color] = params;
-          addNote(title, content, color || 'orange');
+          if (title && title.trim()) {
+            await addNote(title.trim(), content?.trim() || '', color?.trim() || 'orange');
+          }
         }
       }
 
@@ -382,7 +400,7 @@ export default function HomeChat() {
     <div className="h-[100dvh] flex flex-col bg-background text-foreground overflow-hidden select-none font-sans relative group">
 
       {/* ── HEADER ── */}
-      <header className="max-w-4xl w-full mx-auto px-6 py-8 flex items-center justify-between sticky top-0 z-40">
+      <header className="max-w-4xl w-full mx-auto px-6 pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-4 flex items-center justify-between sticky top-0 z-40 bg-background/80 backdrop-blur-md">
         <h1 className="text-5xl font-medium leading-[1.1] tracking-tight text-foreground">
           Lead
         </h1>
@@ -462,7 +480,7 @@ export default function HomeChat() {
       </div>
 
       {/* ── INPUT BAR ── */}
-      <div className="absolute left-0 right-0 px-6 z-30 flex flex-col items-center transition-all duration-300 bottom-28 max-sm:group-has-[textarea:focus]:bottom-4 max-w-4xl mx-auto">
+      <div className="absolute left-0 right-0 px-6 z-30 flex flex-col items-center transition-all duration-300 bottom-[calc(env(safe-area-inset-bottom,0px)+6.5rem)] max-sm:group-has-[textarea:focus]:bottom-4 max-w-4xl mx-auto">
         <div className="flex items-center justify-center gap-3 mb-3 max-w-xl w-full mx-auto">
           <button 
             onClick={() => handleSuggest('Schedule an event: ')} 

@@ -9,10 +9,8 @@ import TodoView from '@/components/TodoView';
 import NotesView from '@/components/NotesView';
 import AccountView from '@/components/AccountView';
 import Auth from '@/components/Auth';
-import NotificationModal from '@/components/Notification';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { NotificationLog } from '@/lib/SupabaseContext';
 
 type Tab = 'calendar' | 'todo' | 'chat' | 'notes' | 'account';
 
@@ -76,21 +74,10 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 ];
 
 export default function Home() {
-  const { user, profile, loading, refreshData, logs, updateNotificationLog } = useSupabase();
+  const { user, profile, loading, refreshData } = useSupabase();
   const isOnline = useOnlineStatus();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
   const [loaderColor, setLoaderColor] = useState('bg-black');
-  const [activeNotification, setActiveNotification] = useState<NotificationLog | null>(null);
-
-  // Check for pending notifications
-  useEffect(() => {
-    if (logs && logs.length > 0) {
-      const pending = logs.find(l => !l.opened && !l.response);
-      if (pending && !activeNotification) {
-        setActiveNotification(pending);
-      }
-    }
-  }, [logs]);
 
   // Auto-switch away from chat when going offline
   useEffect(() => {
@@ -194,13 +181,16 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      {/* ── BOTTOM GRADIENT SHIELD TO PREVENT OVERLAPPING OF CARDS UNDER NAV ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none h-32 bg-gradient-to-t from-background via-background/80 to-transparent" />
+
       {/* ── FLOATING NAVIGATION BAR ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none pb-8 px-4 transition-all duration-300 transform max-sm:group-has-[textarea:focus]:opacity-0 max-sm:group-has-[textarea:focus]:translate-y-12">
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none pb-[calc(env(safe-area-inset-bottom,0px)+1.25rem)] px-4 transition-all duration-300 transform max-sm:group-has-[textarea:focus]:opacity-0 max-sm:group-has-[textarea:focus]:translate-y-12">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, type: 'spring', damping: 26, stiffness: 320 }}
-          className="pointer-events-auto flex items-center gap-1 bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-full p-2 shadow-2xl dark:shadow-[0_20px_40px_rgba(0,0,0,0.8)]"
+          className="pointer-events-auto flex items-center gap-1 bg-white/90 dark:bg-black/90 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-full p-2 shadow-2xl dark:shadow-[0_20px_40px_rgba(0,0,0,0.8)]"
         >
           {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -235,20 +225,6 @@ export default function Home() {
           })}
         </motion.div>
       </div>
-
-      {/* ── ACTIVE NOTIFICATION MODAL ── */}
-      {activeNotification && (
-        <NotificationModal
-          notification={activeNotification}
-          onDismiss={() => setActiveNotification(null)}
-          onAction={async (response) => {
-            if (activeNotification.id) {
-              await updateNotificationLog(activeNotification.id, response);
-            }
-            setActiveNotification(null);
-          }}
-        />
-      )}
     </div>
   );
 }

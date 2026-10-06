@@ -4,6 +4,7 @@ import { useSupabase } from '@/lib/SupabaseContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, X } from 'lucide-react';
+import { parseTaskDate } from '@/lib/utils';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MONTHS = [
@@ -33,10 +34,20 @@ export default function CalendarView() {
   }
 
   const selectedDateStr = selectedDate.toDateString();
-  const eventsForDate = tasks
-    .filter(t => t.type === 'event' && t.target_date)
-    .filter(e => new Date(e.target_date!).toDateString() === selectedDateStr)
-    .sort((a, b) => (a.scheduled_time || '').localeCompare(b.scheduled_time || ''));
+  const rawEvents = tasks
+    .filter(t => t && t.title && t.target_date)
+    .filter(e => {
+      const d = parseTaskDate(e.target_date);
+      return d && d.toDateString() === selectedDateStr;
+    });
+
+  const seenEventKeys = new Set<string>();
+  const eventsForDate = rawEvents.filter(e => {
+    const key = `${(e.title || '').trim().toLowerCase()}_${e.scheduled_time || ''}`;
+    if (seenEventKeys.has(key)) return false;
+    seenEventKeys.add(key);
+    return true;
+  }).sort((a, b) => (a.scheduled_time || '').localeCompare(b.scheduled_time || ''));
 
   const getDayStatus = (y: number, m: number, d: number) => {
     const dateStr = new Date(y, m, d).toDateString();
@@ -70,12 +81,14 @@ export default function CalendarView() {
   };
 
   const eventsOnDay = (d: number) =>
-    tasks.filter(t => t.type === 'event' && t.target_date &&
-      new Date(t.target_date).toDateString() === new Date(year, monthIdx, d).toDateString()
-    ).length;
+    tasks.filter(t => {
+      if (!t || !t.title || !t.target_date) return false;
+      const td = parseTaskDate(t.target_date);
+      return td && td.getFullYear() === year && td.getMonth() === monthIdx && td.getDate() === d;
+    }).length;
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-48 pt-12 select-none font-sans">
+    <div className="min-h-screen bg-background text-foreground pb-48 pt-[calc(env(safe-area-inset-top,0px)+3rem)] sm:pt-16 select-none font-sans">
       <div className="max-w-md lg:max-w-5xl mx-auto px-6">
 
         {/* ── HEADER ── */}
