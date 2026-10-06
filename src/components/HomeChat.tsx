@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { chatDb } from '@/lib/chatDb';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Target, Zap, ArrowUp, Mic, Menu, Plus, MessageSquare, X } from 'lucide-react';
+import { parseTaskDate } from '@/lib/utils';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -27,11 +28,11 @@ export default function HomeChat() {
   const behavioralHistory = { pendingTasks, completedTasks };
 
   const todayStr = new Date().toDateString();
-  const todayTasks = tasks ? tasks.filter(t => t.type === 'short_term').filter(task => {
-    const taskDate = task.target_date 
-      ? new Date(task.target_date).toDateString()
-      : new Date(task.created_at).toDateString();
-    return taskDate === todayStr;
+  const todayTasks = tasks ? tasks.filter(task => {
+    if (!task || !task.title) return false;
+    if (task.type === 'daily') return true;
+    const taskDate = parseTaskDate(task.target_date) || parseTaskDate(task.created_at);
+    return taskDate && taskDate.toDateString() === todayStr;
   }) : [];
 
   const completedCount = todayTasks.filter(t => t.completed).length;

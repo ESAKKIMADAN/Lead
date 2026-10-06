@@ -17,12 +17,10 @@ const WEEKDAYS = [
   { day: 'S', key: 0 },
 ];
 
-function getTasksForDate(tasks: any[], date: Date, isToday: boolean = false) {
+function getTasksForDate(tasks: any[], date: Date) {
   const dateStr = date.toDateString();
-  const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
 
-  // 1. All tasks with a valid title are eligible (short_term, event, daily, reminders, tests, etc.)
+  // 1. All tasks with a valid title are eligible
   const eligible = tasks.filter(t => t && typeof t.title === 'string' && t.title.trim().length > 0);
 
   // Track unique IDs to avoid duplicate object references
@@ -34,7 +32,6 @@ function getTasksForDate(tasks: any[], date: Date, isToday: boolean = false) {
   });
 
   const scheduledForDay: any[] = [];
-  const rolloverCandidates: any[] = [];
 
   for (const task of uniqueEligible) {
     if (task.type === 'daily') {
@@ -45,38 +42,13 @@ function getTasksForDate(tasks: any[], date: Date, isToday: boolean = false) {
     const taskDateObj = parseTaskDate(task.target_date) || parseTaskDate(task.created_at) || new Date();
     const d = taskDateObj.toDateString();
 
+    // Strictly match the selected date. No carrying over / no rollover!
     if (d === dateStr) {
       scheduledForDay.push(task);
-    } else if (isToday && !task.completed && taskDateObj < startOfDay) {
-      // Past uncompleted task (rollover candidate)
-      rolloverCandidates.push(task);
     }
   }
 
-  // Deduplicate: If a task with the same title is already scheduled today,
-  // do NOT duplicate it with an old remained task.
-  const scheduledTitles = new Set(
-    scheduledForDay.map(t => (t.title || '').trim().toLowerCase())
-  );
-
-  // Sort rollover candidates newest first so we only keep the single most recent one if multiple uncompleted past tasks had the same title
-  rolloverCandidates.sort((a, b) => {
-    const da = new Date(a.created_at || a.target_date || 0).getTime();
-    const db = new Date(b.created_at || b.target_date || 0).getTime();
-    return db - da;
-  });
-
-  const dedupedRollover: any[] = [];
-  for (const r of rolloverCandidates) {
-    const norm = (r.title || '').trim().toLowerCase();
-    if (!norm) continue;
-    if (!scheduledTitles.has(norm)) {
-      scheduledTitles.add(norm);
-      dedupedRollover.push({ ...r, isRollover: true });
-    }
-  }
-
-  // Deduplicate scheduled tasks for the day itself if duplicate tasks were saved
+  // Deduplicate tasks if identical copies were created for the same day
   const dedupedScheduled: any[] = [];
   const seenKeys = new Set<string>();
   for (const s of scheduledForDay) {
@@ -88,7 +60,7 @@ function getTasksForDate(tasks: any[], date: Date, isToday: boolean = false) {
     }
   }
 
-  return [...dedupedScheduled, ...dedupedRollover];
+  return dedupedScheduled;
 }
 
 export default function TodoView() {
@@ -113,7 +85,7 @@ export default function TodoView() {
   const activeDate = new Date(baseDate);
   activeDate.setDate(baseDate.getDate() + activeDateOffset);
 
-  const dayTasks = getTasksForDate(tasks, activeDate, activeDateOffset === 0);
+  const dayTasks = getTasksForDate(tasks, activeDate);
   const completedTasks = dayTasks.filter(t => t.completed);
   const doingTasks = dayTasks.filter(t => !t.completed);
   const totalCount = dayTasks.length;
@@ -319,16 +291,9 @@ export default function TodoView() {
                         <p className={`text-lg font-medium leading-tight truncate ${task.completed ? 'line-through text-black/60 dark:text-white/60' : 'text-black'}`}>
                           {task.title}
                         </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <p className={`text-sm font-medium ${task.completed ? 'text-black/40 dark:text-white/40' : 'text-black/50'}`}>
-                            {task.scheduled_time || 'Anytime'}
-                          </p>
-                          {task.isRollover && !task.completed && (
-                            <span className="text-[10px] font-bold uppercase tracking-wider bg-black/10 text-black/70 dark:text-black/80 px-2 py-0.5 rounded-full">
-                              Carried Over
-                            </span>
-                          )}
-                        </div>
+                        <p className={`text-sm mt-0.5 font-medium ${task.completed ? 'text-black/40 dark:text-white/40' : 'text-black/50'}`}>
+                          {task.scheduled_time || 'Anytime'}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button
